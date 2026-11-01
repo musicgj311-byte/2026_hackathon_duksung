@@ -8,8 +8,10 @@ import re
 import time
 
 from fastapi import APIRouter
+from pydantic import BaseModel, Field
 
 from app.config import settings
+from app.judge.signals import collect_fast_signals
 from app.schemas import JudgeRequest, JudgeResponse, Level, ScamType
 
 router = APIRouter(tags=["judge"])
@@ -61,6 +63,16 @@ def fake_judge(req: JudgeRequest) -> JudgeResponse:
         stage_reached=2,
         elapsed_ms=int((time.perf_counter() - started) * 1000),
     )
+
+
+class SignalsRequest(BaseModel):
+    text: str = Field(..., min_length=1, max_length=2000)
+
+
+@router.post("/judge/debug/signals")
+async def debug_signals(req: SignalsRequest) -> dict:
+    """② 빠른 신호만 실행해서 결과를 그대로 보여줍니다. 개발 확인용 (Day 2)."""
+    return (await collect_fast_signals(req.text)).to_dict()
 
 
 @router.post("/judge", response_model=JudgeResponse)
