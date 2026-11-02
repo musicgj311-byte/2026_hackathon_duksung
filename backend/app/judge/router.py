@@ -1,16 +1,19 @@
 """판정 API (백엔드 1 담당).
 
-Day 1~2: USE_FAKE_JUDGE=true 이면 키워드만 보고 고정된 가짜 응답을 돌려줍니다.
-프론트 1은 이 응답으로 먼저 연결 작업을 하고, Day 3에 실제 판정으로 교체합니다.
+USE_FAKE_JUDGE=true  : 키워드만 보고 고정된 가짜 응답 (프론트 연결 확인용)
+USE_FAKE_JUDGE=false : 캐스케이드 ②~④ 실제 판정 (cascade.run)
+어느 쪽이든 '위험'이면 보호자 알림 함수를 호출합니다.
 """
 
 import re
 import time
 
-from fastapi import APIRouter
+from fastapi import APIRouter, BackgroundTasks
 from pydantic import BaseModel, Field
 
 from app.config import settings
+from app.guardian.router import notify_guardians
+from app.judge import cascade
 from app.judge.signals import collect_fast_signals
 from app.schemas import JudgeRequest, JudgeResponse, Level, ScamType
 
@@ -76,8 +79,11 @@ async def debug_signals(req: SignalsRequest) -> dict:
 
 
 @router.post("/judge", response_model=JudgeResponse)
-async def judge(req: JudgeRequest) -> JudgeResponse:
-    if settings.use_fake_judge:
-        return fake_judge(req)
-    # TODO(백엔드 1, Day 3): cascade.run(req) 로 교체
-    return fake_judge(req)
+async def judge(req: JudgeRequest, background: BackgroundTasks) -> JudgeResponse:
+    result = fake_judge(req) if settings.use_fake_judge else await cascade.run(req)
+    if result.level is Level.danger:
+        # 응답을 먼저 보내고 보호자 알림은 뒤에서 처리 (경고창이 늦게 뜨지 않게)
+        background.add_task(
+            notify_guardians, req.device_id, result.level.value, result.scam_type.value
+        )
+    return result
