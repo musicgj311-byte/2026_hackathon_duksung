@@ -35,3 +35,15 @@ class UserUpdateResponse(BaseModel):
     user_type: UserType
     language: str
     message: str
+
+
+# FCM 토큰 등록 및 갱신 시 전달받는 데이터
+class FCMTokenRequest(BaseModel):
+    fcm_token: str = Field(min_length=1)
+
+
+# FCM 토큰 등록 및 갱신 후 반환할 데이터
+class FCMTokenResponse(BaseModel):
+    device_id: str
+    message: str
+
