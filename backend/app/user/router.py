@@ -8,6 +8,8 @@ from app.user.schemas import (
     UserRegisterResponse,
     UserUpdateRequest,
     UserUpdateResponse,
+    FCMTokenRequest,
+    FCMTokenResponse,
 )
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -129,4 +131,37 @@ def update_user(
         user_type=user.user_type,
         language=user.language,
         message="사용자 정보가 수정되었습니다.",
+    )
+
+    
+# 4. FCM 토큰 저장 및 갱신 API
+@router.put(
+    "/{device_id}/fcm-token",
+    response_model=FCMTokenResponse,
+)
+def update_fcm_token(
+    device_id: str,
+    request: FCMTokenRequest,
+    session: Session = Depends(get_session),
+):
+    # FCM 토큰을 저장할 사용자 조회
+    user = session.get(Device, device_id)
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="등록된 사용자를 찾을 수 없습니다.",
+        )
+
+    # 기존 FCM 토큰을 새로운 토큰으로 갱신
+    user.fcm_token = request.fcm_token
+
+    # 변경 사항 저장
+    session.add(user)
+    session.commit()
+    session.refresh(user)
+
+    return FCMTokenResponse(
+        device_id=user.device_id,
+        message="FCM 토큰이 등록되었습니다.",
     )
