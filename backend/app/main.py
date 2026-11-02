@@ -9,11 +9,12 @@ from app.guardian.router import router as guardian_router
 from app.judge.router import router as judge_router
 from app.user.router import router as user_router
 from app import models #SQLModel import를 위해 models.py를 import
+from app.firebase import initialize_firebase
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # 서버가 시작될 때 데이터베이스와 테이블 생성
     create_db_and_tables()
+    initialize_firebase()
     yield
 
 app = FastAPI(title="사기문자 방패 API", version="0.1.0", lifespan=lifespan)
