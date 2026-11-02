@@ -13,8 +13,9 @@
 import time
 from dataclasses import dataclass
 
-from app.judge.fallback_messages import get_message
+from app.judge.fallback_messages import Message, get_message
 from app.judge.llm import LlmVerdict, judge_with_llm
+from app.judge.localize import polish
 from app.judge.rules import RuleHits, check_rules
 from app.judge.signals import FastSignals, collect_fast_signals
 from app.schemas import JudgeRequest, JudgeResponse, Level, ScamType, UrlResult
@@ -66,7 +67,22 @@ def _url_result(fast: FastSignals) -> UrlResult | None:
     )
 
 
+@dataclass
+class Detail:
+    """채점·디버그용 내부 정보. API 응답에는 나가지 않습니다."""
+
+    llm_called: bool
+    llm_ok: bool
+    text_source: str  # "llm" | "fixed" | "fixed_language_mismatch"
+    rule_types: list[str]
+
+
 async def run(req: JudgeRequest) -> JudgeResponse:
+    response, _ = await run_detailed(req)
+    return response
+
+
+async def run_detailed(req: JudgeRequest) -> tuple[JudgeResponse, Detail]:
     started = time.perf_counter()
     rules = check_rules(req.text)
     fast = await collect_fast_signals(req.text)
@@ -84,16 +100,26 @@ async def run(req: JudgeRequest) -> JudgeResponse:
         )
 
     d = decide(fast, rules, verdict, from_contact=req.is_contact)
+    fixed = get_message(d.level, d.scam_type, req.language)
     if d.use_llm_text and verdict is not None:
-        title, explanation = verdict.title, verdict.explanation
-        action, easy = verdict.action, verdict.easy_sentence
-        signals = verdict.signals
+        from_llm = Message(
+            verdict.title, verdict.explanation, verdict.action, verdict.easy_sentence
+        )
+        m = polish(from_llm, fixed, req.language, req.user_type)
+        source = "fixed_language_mismatch" if m is fixed else "llm"
+        signals = verdict.signals if m is not fixed else fast.weak
     else:
-        m = get_message(d.level, d.scam_type, req.language)
-        title, explanation, action, easy = m.title, m.explanation, m.action, m.easy_sentence
+        m, source = fixed, "fixed"
         signals = fast.weak if d.level is not Level.safe else []
+    title, explanation, action, easy = m.title, m.explanation, m.action, m.easy_sentence
 
-    return JudgeResponse(
+    detail = Detail(
+        llm_called=not fast.strong,
+        llm_ok=verdict is not None,
+        text_source=source,
+        rule_types=[t.value for t in rules.scam_types],
+    )
+    response = JudgeResponse(
         level=d.level,
         scam_type=d.scam_type,
         signals=signals,
@@ -107,3 +133,4 @@ async def run(req: JudgeRequest) -> JudgeResponse:
         stage_reached=d.stage,
         elapsed_ms=int((time.perf_counter() - started) * 1000),
     )
+    return response, detail

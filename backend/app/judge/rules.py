@@ -17,7 +17,7 @@ _SCAM_PATTERNS: dict[ScamType, str] = {
     ScamType.delivery: r"택배|배송|운송장|주소\s*(불일치|불명|확인)|보관\s*중|반송",
     ScamType.obituary_invitation: r"부고|별세|청첩장|모바일\s*초대장|결혼식",
     ScamType.subsidy_refund: r"지원금|환급|민생|소비\s*쿠폰|재난\s*지원|정부\s*지원",
-    ScamType.payment_alert: r"해외\s*결제|결제\s*(승인|완료)|카드\s*발급|이용\s*내역|승인\s*\d",
+    ScamType.payment_alert: r"해외\s*(결제|승인)|결제.{0,15}(승인|완료)|승인.{0,15}결제|카드\s*발급|이용\s*내역|본인\s*(결제|사용|이용)?\s*(가|이)?\s*아니",
     ScamType.job_loan: r"고수익|알바|부업|재택\s*근무|대출|저금리|한도\s*조회",
     ScamType.immigration: r"출입국|체류|비자|외국인\s*등록|immigration|visa",
 }  # fmt: skip

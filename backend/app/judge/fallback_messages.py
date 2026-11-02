@@ -68,10 +68,17 @@ _OTHER: dict[str, dict[Level, Message]] = {
 }  # fmt: skip
 
 
+def base_language(language: str) -> str:
+    """'vi-VN' → 'vi', 'ZH' → 'zh'"""
+    return language.lower().split("-")[0].split("_")[0]
+
+
 def get_message(level: Level, scam_type: ScamType, language: str) -> Message:
-    lang = language.lower().split("-")[0]
-    if lang in _OTHER:
-        return _OTHER[lang][level]
+    """한국어는 수법별 문구, 영어·베트남어·중국어는 단계별 문구.
+    고정 문구가 없는 언어는 영어로 돌려줍니다 (한국어보다 읽을 수 있을 가능성이 높아서)."""
+    lang = base_language(language)
+    if lang != "ko":
+        return _OTHER.get(lang, _OTHER["en"])[level]
     if level is Level.safe:
         return _KO_SAFE
     title, action, easy = _KO_LEVEL[level]

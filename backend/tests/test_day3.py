@@ -111,7 +111,7 @@ def test_llm_request_and_response(monkeypatch):
     assert seen["key"] == "AQ.test"
     assert seen["body"]["generationConfig"]["temperature"] == 0
     system = seen["body"]["systemInstruction"]["parts"][0]["text"]
-    assert "Tiếng Việt" in system and "초등학생" in system
+    assert "Tiếng Việt" in system and "초등학교 저학년" in system
     assert "<message>" in seen["body"]["contents"][0]["parts"][0]["text"]
 
 

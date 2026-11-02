@@ -21,13 +21,30 @@ from app.schemas import ScamType, UserType
 LLM_TIMEOUT_SECONDS = 5.0
 GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 
-LANGUAGE_NAMES = {"ko": "한국어", "en": "English", "vi": "Tiếng Việt", "zh": "简体中文"}
+# 국내 이주민이 많이 쓰는 언어 위주. 여기 없는 코드도 그대로 넘기면 LLM이 대부분 알아듣습니다.
+LANGUAGE_NAMES = {
+    "ko": "한국어",
+    "en": "English",
+    "vi": "Tiếng Việt (베트남어)",
+    "zh": "简体中文 (중국어 간체)",
+    "th": "ภาษาไทย (태국어)",
+    "uz": "Oʻzbekcha (우즈베크어)",
+    "km": "ភាសាខ្មែរ (크메르어)",
+    "ne": "नेपाली (네팔어)",
+    "ru": "Русский (러시아어)",
+    "mn": "Монгол (몽골어)",
+    "id": "Bahasa Indonesia (인도네시아어)",
+    "tl": "Filipino (필리핀어)",
+}
 
 USER_STYLE = {
     UserType.default: "쉬운 말로, 존댓말로 쓴다.",
-    UserType.visual: "화면 낭독기가 읽기 좋게 이모지, 기호, 괄호 없이 완전한 문장으로 쓴다.",
+    UserType.visual: "화면 낭독기가 읽기 좋게 이모지, 기호, 괄호, 화살표 없이 완전한 문장으로 쓴다.",
     UserType.hearing: "아주 짧은 문장으로 쓴다. 한 문장에 한 가지 내용만 쓴다.",
-    UserType.developmental: "초등학생도 이해할 수 있는 가장 쉬운 단어로, 아주 짧게 쓴다.",
+    UserType.developmental: (
+        "초등학교 저학년도 이해할 수 있는 가장 쉬운 단어로 쓴다. 한 문장은 짧게, 어려운 한자어와 비유는 쓰지 않는다. "
+        "easy_sentence는 하지 말아야 할 행동 하나를 '~하지 마세요' 형태로 쓴다 (예: 돈 보내지 마세요)."
+    ),
 }
 
 
