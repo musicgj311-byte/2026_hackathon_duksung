@@ -41,3 +41,32 @@ class GuardianDisconnectResponse(BaseModel):
     protected_device_id: str
     guardian_device_id: str
     message: str
+
+
+# 7. 연결된 보호 대상자 정보
+class ProtectedUserInfo(BaseModel):
+    protected_device_id: str
+    user_type: str
+    language: str
+
+
+# 8. 연결된 보호 대상자 목록 조회 결과
+class ProtectedUserListResponse(BaseModel):
+    guardian_device_id: str
+    protected_users: list[ProtectedUserInfo]
+
+
+# 9. 보호자 알림 이력 정보
+class NotificationInfo(BaseModel):
+    id: int
+    protected_device_id: str
+    level: str
+    scam_type: str
+    status: str
+    sent_at: datetime
+
+
+# 10. 보호자 알림 이력 조회 결과
+class NotificationListResponse(BaseModel):
+    guardian_device_id: str
+    notifications: list[NotificationInfo]
