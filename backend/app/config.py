@@ -8,6 +8,8 @@ class Settings(BaseSettings):
 
     llm_api_key: str = ""
     llm_model: str = "gemini-3.5-flash-lite"
+    llm_fallback_model: str = "gemini-flash-lite-latest"
+    llm_thinking_level: str = "minimal"
     safe_browsing_api_key: str = ""
     virustotal_api_key: str = ""
     firebase_credentials_path: str = "firebase-key.json"
