@@ -13,7 +13,10 @@ CSV 형식 (eval/messages.csv): id, category, text, is_contact, is_international
 - 잘못 잡은 정상: 정답이 안전인데 '위험'으로 판정
 - 과한 주의: 정답이 안전인데 '주의'로 판정 (불편하지만 치명적이지 않음)
 - 약하게 판정: 정답이 위험인데 '주의'로 판정
+- 허용(△): 정답과 다르지만 테스트셋의 allowed_risks에 들어 있는 판정
 - 결과는 eval_results/ 폴더에 CSV로 저장됩니다.
+
+기획 테스트셋 형식(sender_saved, expected_risk, allowed_risks, label ...)도 그대로 읽습니다.
 
 --delay: 문자 사이에 쉬는 초. Gemini 무료 등급의 분당 호출 제한에 걸리지 않게 기본 4.5초.
 """
@@ -43,6 +46,17 @@ class Row:
     is_international: bool
     expected: Level
     note: str = ""
+    allowed: frozenset[Level] = frozenset()  # 정답 외에 허용하는 판정 (비우면 정답만)
+    is_scam: bool | None = None  # 사기/정상 구분 (없으면 expected로 추정)
+    source: str = "sms"
+
+    @property
+    def scam(self) -> bool:
+        return self.is_scam if self.is_scam is not None else self.expected is not Level.safe
+
+    @property
+    def accepted(self) -> frozenset[Level]:
+        return self.allowed | {self.expected}
 
 
 @dataclass
@@ -56,6 +70,8 @@ class Graded:
         exp, got = self.row.expected, self.got.level
         if exp == got:
             return "정답"
+        if got in self.row.accepted:
+            return "허용"
         if exp is not Level.safe and got is Level.safe:
             return "놓친 사기"
         if exp is Level.safe and got is Level.danger:
@@ -71,33 +87,59 @@ def _bool(v: str) -> bool:
     return v.strip().lower() in ("true", "1", "y", "yes", "o", "예")
 
 
+def _levels(v: str) -> frozenset[Level]:
+    return frozenset(Level(x.strip().lower()) for x in v.split("|") if x.strip())
+
+
+def _row(r: dict) -> Row:
+    """두 가지 CSV 형식을 모두 읽습니다.
+    - 기본 형식: is_contact, is_international, expected
+    - 기획 테스트셋 형식: sender_saved, sender_tag, expected_risk, allowed_risks, label, channel
+    """
+    g = lambda k: (r.get(k) or "").strip()  # noqa: E731
+    if "expected_risk" in r:
+        category = g("category")
+        if g("scam_type") and g("scam_type") != "none":
+            category = f"{category}/{g('scam_type')}"
+        return Row(
+            id=g("id"),
+            category=category,
+            text=g("text"),
+            is_contact=_bool(g("sender_saved")),
+            is_international=g("sender_tag").lower() == "international",
+            expected=Level(g("expected_risk").lower()),
+            note=g("note"),
+            allowed=_levels(g("allowed_risks")),
+            is_scam=g("label").lower() == "scam" if g("label") else None,
+            source="kakao" if g("channel").lower() == "kakao" else "sms",
+        )
+    return Row(
+        id=g("id"),
+        category=g("category"),
+        text=g("text"),
+        is_contact=_bool(g("is_contact")),
+        is_international=_bool(g("is_international")),
+        expected=Level(g("expected").lower()),
+        note=g("note"),
+    )
+
+
 def load_rows(path: Path) -> list[Row]:
     with path.open(encoding="utf-8-sig", newline="") as f:
-        return [
-            Row(
-                id=r["id"].strip(),
-                category=r["category"].strip(),
-                text=r["text"].strip(),
-                is_contact=_bool(r.get("is_contact", "")),
-                is_international=_bool(r.get("is_international", "")),
-                expected=Level(r["expected"].strip().lower()),
-                note=(r.get("note") or "").strip(),
-            )
-            for r in csv.DictReader(f)
-            if r.get("text", "").strip()
-        ]
+        return [_row(r) for r in csv.DictReader(f) if (r.get("text") or "").strip()]
 
 
 def summarize(results: list[Graded]) -> dict:
     """채점 결과를 숫자로 요약합니다. 테스트하기 쉽게 출력과 분리했습니다."""
     n = len(results)
     count = lambda name: sum(1 for g in results if g.outcome == name)  # noqa: E731
-    scams = [g for g in results if g.row.expected is not Level.safe]
-    normals = [g for g in results if g.row.expected is Level.safe]
+    scams = [g for g in results if g.row.scam]
+    normals = [g for g in results if not g.row.scam]
     times = [g.got.elapsed_ms for g in results]
     return {
         "total": n,
         "exact": count("정답"),
+        "accepted": count("정답") + count("허용"),
         "missed": count("놓친 사기"),
         "false_alarm": count("잘못 잡은 정상"),
         "over_caution": count("과한 주의"),
@@ -107,6 +149,7 @@ def summarize(results: list[Graded]) -> dict:
         "scam_warned": sum(1 for g in scams if g.got.level is not Level.safe),
         "normal_total": len(normals),
         "normal_quiet": sum(1 for g in normals if g.got.level is Level.safe),
+        "normal_danger": sum(1 for g in normals if g.got.level is Level.danger),
         "avg_ms": int(statistics.mean(times)) if times else 0,
         "max_ms": max(times) if times else 0,
         "llm_called": sum(1 for g in results if g.detail.llm_called),
@@ -120,20 +163,22 @@ def summarize(results: list[Graded]) -> dict:
 def print_report(results: list[Graded], s: dict) -> None:
     print("\n" + "=" * 72)
     for g in results:
-        mark = "O" if g.outcome == "정답" else "X"
+        mark = {"정답": "O", "허용": "△"}.get(g.outcome, "X")
         exp, got = LEVEL_KO[g.row.expected.value], LEVEL_KO[g.got.level.value]
         print(
             f"{mark} #{g.row.id:>3} [{g.row.category}] 정답 {exp} / 판정 {got}"
             f" ({g.outcome}) {g.got.elapsed_ms}ms"
         )
-        if g.outcome != "정답":
+        if g.outcome not in ("정답", "허용"):
             print(f"      문자: {g.row.text[:60]}")
             print(f"      설명: {g.got.explanation[:60]}")
     pct = lambda a, b: f"{a}/{b} ({a / b:.0%})" if b else "0/0"  # noqa: E731
     print("=" * 72)
-    print(f"단계까지 정확히 맞힘      {pct(s['exact'], s['total'])}")
+    print(f"허용 범위 안 (O + △)      {pct(s['accepted'], s['total'])}")
+    print(f"단계까지 정확히 맞힘 (O)  {pct(s['exact'], s['total'])}")
     print(f"사기 문자에 경고함        {pct(s['scam_warned'], s['scam_total'])}")
     print(f"정상 문자를 조용히 통과   {pct(s['normal_quiet'], s['normal_total'])}")
+    print(f"정상 문자를 '위험'으로    {s['normal_danger']}")
     print(f"놓친 사기 (치명적)        {s['missed']}")
     print(f"잘못 잡은 정상 (위험)     {s['false_alarm']}")
     print(f"과한 주의 (정상 → 주의)   {s['over_caution']}")
@@ -186,7 +231,7 @@ async def main() -> None:
     for i, row in enumerate(rows, 1):
         req = JudgeRequest(
             device_id="eval",
-            source="sms",
+            source=row.source,
             sender="010-0000-0000",
             is_contact=row.is_contact,
             is_international=row.is_international,

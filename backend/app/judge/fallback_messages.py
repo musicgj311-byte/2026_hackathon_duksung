@@ -29,7 +29,7 @@ _KO_REASON: dict[ScamType, str] = {
     ScamType.delivery: "택배 회사를 흉내 낸 가짜 주소일 수 있어요.",
     ScamType.obituary_invitation: "부고나 청첩장을 흉내 내 가짜 주소를 누르게 하는 사기일 수 있어요.",
     ScamType.subsidy_refund: "지원금이나 환급을 핑계로 정보를 빼가는 사기일 수 있어요.",
-    ScamType.payment_alert: "결제 알림을 흉내 내 전화나 주소 클릭을 유도하는 사기일 수 있어요.",
+    ScamType.payment_alert: "결제나 카드 발급 알림을 흉내 내 문자 속 번호로 전화하게 만드는 사기일 수 있어요. 그 번호로 전화하지 마세요.",
     ScamType.job_loan: "쉬운 돈벌이나 대출을 미끼로 한 사기일 수 있어요.",
     ScamType.immigration: "출입국·체류 기관을 흉내 낸 사기일 수 있어요.",
     ScamType.other: "돈이나 정보를 노리는 문자일 수 있어요.",
@@ -37,8 +37,8 @@ _KO_REASON: dict[ScamType, str] = {
 }  # fmt: skip
 
 _KO_LEVEL = {
-    Level.danger: ("사기 문자 같아요", "주소를 누르지 말고, 돈도 보내지 마세요. 보낸 사람에게 원래 번호로 직접 전화해 확인하세요.", "누르지 마세요. 돈 보내지 마세요."),
-    Level.caution: ("조심하세요", "주소를 누르거나 돈을 보내기 전에, 보낸 곳에 직접 전화해 확인하세요.", "먼저 전화로 확인하세요."),
+    Level.danger: ("사기 문자 같아요", "주소를 누르거나 문자 속 번호로 전화하지 마세요. 원래 알던 번호나 공식 대표번호로 직접 확인하세요.", "누르지 마세요. 돈 보내지 마세요."),
+    Level.caution: ("조심하세요", "주소를 누르거나 돈을 보내기 전에, 원래 알던 번호나 공식 대표번호로 확인하세요.", "먼저 전화로 확인하세요."),
 }  # fmt: skip
 
 _KO_SAFE = Message(

@@ -171,9 +171,11 @@ def test_scam_plus_new_domain_is_danger():
 
 
 def test_scam_only_is_caution():
-    v = verdict(scam_type="delivery", requests_money=False, requests_link_click=True)
-    fast = FastSignals(urls=[url(domain_age_days=900)])
-    assert decide(fast, check_rules("택배 확인"), v, from_contact=False).level is Level.caution
+    v = verdict(scam_type="delivery", requests_money=False)
+    assert (
+        decide(FastSignals(), check_rules("택배 확인"), v, from_contact=False).level
+        is Level.caution
+    )
 
 
 def test_guard_when_llm_says_none_for_unknown_sender():

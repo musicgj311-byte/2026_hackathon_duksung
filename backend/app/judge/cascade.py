@@ -3,8 +3,10 @@
 ② 빠른 신호 → 악성 URL 목록에 걸리면 LLM 없이 바로 '위험'
 ③ LLM 종합 판정 (5초 제한)
 ④ 신호 종합
-   위험: 수법 의심 + 송금·설치·개인정보 요구
+   위험: 수법 의심 + 송금·설치·개인정보 요구·문자 속 번호로 전화 유도
          수법 의심 + 새로 만든 도메인
+         수법 의심 + 모르는 번호가 보낸 링크
+   저장된 연락처는 최대 '주의' (악성 URL 목록에 걸린 경우만 위험)
    주의: 수법 의심만 있음 / LLM 시간 초과·실패인데 규칙·링크에 걸린 게 있음
          LLM은 '수법 없음'이지만 모르는 번호에서 사칭 + 요구가 보임
    안전해 보임: 그 외 (문구는 항상 고정 문구, '안전하다'고 단정하지 않음)
@@ -34,22 +36,33 @@ def decide(
 ) -> Decision:
     """④ 신호 종합. 외부 호출 없이 판정 규칙만 담아서 테스트하기 쉽게 분리했습니다."""
     if fast.strong:
+        # 악성 URL 목록에 걸리면 저장된 연락처여도 위험 (계정 탈취 가능성)
         return Decision(Level.danger, rules.top_type, stage=2, use_llm_text=False)
+    d = _decide_by_llm(fast, rules, verdict, from_contact=from_contact)
+    if from_contact and d.level is Level.danger:
+        # 저장된 연락처는 최대 '주의' (팀 합의: 평소 대화인지 알 수 없으니 원래 번호로 확인 안내)
+        return Decision(Level.caution, d.scam_type, d.stage, d.use_llm_text)
+    return d
 
+
+def _decide_by_llm(
+    fast: FastSignals, rules: RuleHits, verdict: LlmVerdict | None, *, from_contact: bool
+) -> Decision:
     if verdict is None:
         # LLM 실패·시간 초과: 규칙이나 링크에 걸린 게 하나라도 있으면 '주의', 아무것도 없으면 통과
         if rules.scam_types or rules.pushes_action or fast.has_url:
             return Decision(Level.caution, rules.top_type, stage=3, use_llm_text=False)
         return Decision(Level.safe, ScamType.none, stage=3, use_llm_text=False)
 
-    new_domain = any(u.new_domain for u in fast.urls)
-    if verdict.is_scam_like and (verdict.pushes_action or rules.pushes_action or new_domain):
-        return Decision(Level.danger, verdict.scam_type, stage=3, use_llm_text=True)
     if verdict.is_scam_like:
+        new_domain = any(u.new_domain for u in fast.urls)
+        demands = verdict.pushes_action or rules.pushes_action
+        unknown_link = fast.has_url and not from_contact
+        if demands or new_domain or unknown_link:
+            return Decision(Level.danger, verdict.scam_type, stage=3, use_llm_text=True)
         return Decision(Level.caution, verdict.scam_type, stage=3, use_llm_text=True)
     if rules.impersonation_with_demand and not from_contact:
         # LLM이 문자 속 문장에 속았을 가능성. 규칙 쪽 문구로 '주의'
-        # (저장된 가족이 진짜로 돈을 부탁하는 경우까지 잡지 않도록 모르는 번호일 때만)
         return Decision(Level.caution, rules.top_type, stage=3, use_llm_text=False)
     return Decision(Level.safe, ScamType.none, stage=3, use_llm_text=False)
 

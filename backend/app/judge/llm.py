@@ -58,6 +58,7 @@ class LlmVerdict(BaseModel):
     requests_app_install: bool = False
     requests_link_click: bool = False
     requests_personal_info: bool = False
+    requests_call: bool = False
     signals: list[str] = Field(default_factory=list, max_length=5)
     title: str
     explanation: str
@@ -70,7 +71,12 @@ class LlmVerdict(BaseModel):
 
     @property
     def pushes_action(self) -> bool:
-        return self.requests_money or self.requests_app_install or self.requests_personal_info
+        return (
+            self.requests_money
+            or self.requests_app_install
+            or self.requests_personal_info
+            or self.requests_call
+        )
 
 
 SYSTEM_PROMPT = """너는 한국의 스미싱(사기 문자) 판별기다. 사용자는 디지털 기기에 익숙하지 않은 사람이다.
@@ -90,6 +96,8 @@ none: 사기 수법이 보이지 않음
 
 [판단 기준]
 - 송금·이체·상품권 요구, 앱 설치 요구, 링크 클릭 유도, 인증번호·비밀번호·신분증 요구가 있는가
+- 문자 속 전화번호로 전화하게 만드는가 (예: "본인이 아니면 고객센터로 신고", "개통 내용이 아니면 연락") → requests_call
+- requests_* 항목은 이 문자가 그 행동을 실제로 하라고 요구할 때만 true로 한다. 안부를 묻거나 반응을 떠보기만 하는 문자는 false
 - 번호 변경 주장, 급한 상황 연출, 기관 사칭, 모르는 번호에서 온 개인적인 부탁이 있는가
 - 함께 주는 '참고 신호'(새 도메인, 단축 URL 등)도 고려한다
 - 확실하지 않으면 suspicion을 50 근처로 두고, 정상 알림에 과하게 반응하지 않는다
@@ -101,13 +109,14 @@ none: 사기 수법이 보이지 않음
 - title: 10자 내외
 - explanation: 왜 위험한지 2문장 이내
 - action: 지금 해야 할 행동 하나 (예: 가족에게 원래 번호로 직접 전화해 확인하기)
+- action에서 문자에 적힌 번호로 전화하라고 하지 않는다. 확인은 원래 알던 번호, 카드 뒷면 번호, 공식 대표번호로 하라고 쓴다
 - easy_sentence: 10자 내외 한 문장
 - signals: 판단 근거를 짧은 말로 최대 3개
 - '안전합니다', '100% 확실' 같은 단정은 쓰지 않는다
 
 [출력] 아래 JSON 하나만 출력한다.
 {{"scam_type": "...", "suspicion": 0, "requests_money": false, "requests_app_install": false,
-"requests_link_click": false, "requests_personal_info": false, "signals": ["..."],
+"requests_link_click": false, "requests_personal_info": false, "requests_call": false, "signals": ["..."],
 "title": "...", "explanation": "...", "action": "...", "easy_sentence": "..."}}"""
 
 
