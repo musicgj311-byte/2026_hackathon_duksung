@@ -1,17 +1,29 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
+from app.database import create_db_and_tables
 from app.guardian.router import router as guardian_router
 from app.judge.router import router as judge_router
+from app.user.router import router as user_router
+from app import models #SQLModel import를 위해 models.py를 import
 
-app = FastAPI(title="사기문자 방패 API", version="0.1.0")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # 서버가 시작될 때 데이터베이스와 테이블 생성
+    create_db_and_tables()
+    yield
+
+app = FastAPI(title="사기문자 방패 API", version="0.1.0", lifespan=lifespan)
 
 # 보호자 웹 대시보드에서 호출할 수 있도록 허용 (해커톤용으로 전체 허용)
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
 app.include_router(judge_router)
 app.include_router(guardian_router)
+app.include_router(user_router)
 
 
 @app.get("/health")

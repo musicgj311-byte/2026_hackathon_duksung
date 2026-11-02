@@ -66,6 +66,7 @@ def _check_claude(key: str, model: str) -> str:
         },
         timeout=TIMEOUT,
     )
+
     if r.status_code != 200:
         return f"실패 {r.status_code}: {r.text[:300]}"
     return f"정상 (Claude {model}, 응답: {r.json()['content'][0]['text'].strip()})"
@@ -108,6 +109,7 @@ if __name__ == "__main__":
             result = fn()
         except httpx.HTTPError as e:
             result = f"네트워크 오류: {e}"
+
         print(f"{name:14} {result}")
 
     if settings.llm_api_key.strip() and not settings.llm_api_key.startswith("sk-ant-"):
