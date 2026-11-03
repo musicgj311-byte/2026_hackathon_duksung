@@ -10,11 +10,14 @@ import time
 
 from fastapi import APIRouter, BackgroundTasks
 from pydantic import BaseModel, Field
+from sqlmodel import Session
 
 from app.config import settings
+from app.database import engine
 from app.guardian.router import notify_guardians
 from app.judge import cascade
 from app.judge.signals import collect_fast_signals
+from app.models import ScamIncident
 from app.schemas import JudgeRequest, JudgeResponse, Level, ScamType
 
 router = APIRouter(tags=["judge"])
@@ -80,10 +83,33 @@ async def debug_signals(req: SignalsRequest) -> dict:
 
 @router.post("/judge", response_model=JudgeResponse)
 async def judge(req: JudgeRequest, background: BackgroundTasks) -> JudgeResponse:
+    # 1. 문자 판정 실행
     result = fake_judge(req) if settings.use_fake_judge else await cascade.run(req)
-    if result.level is Level.danger:
-        # 응답을 먼저 보내고 보호자 알림은 뒤에서 처리 (경고창이 늦게 뜨지 않게)
-        background.add_task(
-            notify_guardians, req.device_id, result.level.value, result.scam_type.value
+
+    # 2. 위험 또는 주의 판정이면 사건 기록 생성
+    if result.level in (Level.danger, Level.caution):
+        incident = ScamIncident(
+            protected_device_id=req.device_id,
+            level=result.level.value,
+            scam_type=result.scam_type.value,
         )
+
+        # DB에 사건 저장
+        with Session(engine) as session:
+            session.add(incident)
+            session.commit()
+            session.refresh(incident)
+
+        # 생성된 사건 ID를 판정 응답에 추가
+        result.incident_id = incident.id
+
+    # 3. 위험 판정일 때만 보호자 알림 전송
+    if result.level is Level.danger:
+        background.add_task(
+            notify_guardians,
+            req.device_id,
+            result.level.value,
+            result.scam_type.value,
+        )
+
     return result

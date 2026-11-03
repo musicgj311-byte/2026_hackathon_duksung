@@ -8,6 +8,7 @@ from app.database import create_db_and_tables
 from app.guardian.router import router as guardian_router
 from app.judge.router import router as judge_router
 from app.user.router import router as user_router
+from app.incident.router import router as incident_router
 from app import models #SQLModel import를 위해 models.py를 import
 from app.firebase import initialize_firebase
 
@@ -25,6 +26,7 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], all
 app.include_router(judge_router)
 app.include_router(guardian_router)
 app.include_router(user_router)
+app.include_router(incident_router)
 
 
 @app.get("/health")

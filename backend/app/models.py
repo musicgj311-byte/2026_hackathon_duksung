@@ -64,3 +64,41 @@ class NotificationLog(SQLModel, table=True):
     scam_type: str
     status: str = Field(default="pending")  # pending / success / failed
     sent_at: datetime = Field(default_factory=get_current_time)
+
+# 5. 사기 의심 사건 기록
+class ScamIncident(SQLModel, table=True):
+    __tablename__ = "scam_incidents"
+
+    id: int | None = Field(default=None, primary_key=True)
+
+    # 사건이 발생한 보호 대상자 기기
+    protected_device_id: str = Field(
+        foreign_key="devices.device_id",
+        index=True,
+    )
+
+    # 판정 결과
+    level: str  # danger / caution
+    scam_type: str
+
+    # 백엔드가 판정 요청을 받은 시각
+    received_at: datetime = Field(default_factory=get_current_time)
+
+
+# 6. 사건별 진행 이벤트 기록
+class ScamEvent(SQLModel, table=True):
+    __tablename__ = "scam_events"
+
+    id: int | None = Field(default=None, primary_key=True)
+
+    # 어떤 사건에서 발생한 이벤트인지 연결
+    incident_id: int = Field(
+        foreign_key="scam_incidents.id",
+        index=True,
+    )
+
+    # 이벤트 종류 (현재는 warning_shown만 사용)
+    event_type: str
+
+    # 백엔드가 이벤트 요청을 받은 시각
+    occurred_at: datetime = Field(default_factory=get_current_time)
