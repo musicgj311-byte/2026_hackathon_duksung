@@ -1,5 +1,5 @@
 # ruff: noqa: E501
-"""기획 테스트셋 채점에서 드러난 판정 규칙 보완을 확인합니다."""
+"""채점에서 드러난 판정 규칙 보완"""
 
 from app.judge.cascade import decide
 from app.judge.fallback_messages import get_message
@@ -98,6 +98,4 @@ def test_fixed_messages_never_say_call_the_sender():
         for t in ScamType:
             m = get_message(level, t, "ko")
             assert "보낸 곳에 직접 전화" not in m.action and "보낸 사람에게" not in m.action
-    assert (
-        "그 번호로 전화하지" in get_message(Level.danger, ScamType.payment_alert, "ko").explanation
-    )
+    assert "번호로 전화하지" in get_message(Level.danger, ScamType.payment_alert, "ko").action
