@@ -13,6 +13,8 @@ from app.models import (
     GuardianLink,
     PairingCode,
     NotificationLog,
+    ScamIncident,
+    ScamEvent,
 )
 
 from app.guardian.schemas import (
@@ -26,6 +28,9 @@ from app.guardian.schemas import (
     ProtectedUserListResponse,
     NotificationInfo,
     NotificationListResponse,
+    IncidentEventInfo,
+    IncidentInfo,
+    IncidentListResponse,
 )
 
 router = APIRouter(prefix="/guardian", tags=["guardian"])
@@ -470,4 +475,81 @@ def get_notifications(
             )
             for notification in notifications
         ],
+    )
+
+# 보호자에게 연결된 보호 대상자의 사건 타임라인 조회
+@router.get(
+    "/{guardian_device_id}/incidents",
+    response_model=IncidentListResponse,
+)
+def get_incidents(
+    guardian_device_id: str,
+    session: Session = Depends(get_session),
+):
+    # 1. 요청한 기기가 실제 보호자인지 확인
+    guardian = session.get(Device, guardian_device_id)
+
+    if not guardian or guardian.role != "guardian":
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="보호자를 찾을 수 없습니다.",
+        )
+
+    # 2. 해당 보호자와 현재 연결된 보호 대상자 ID 조회
+    protected_device_ids = session.exec(
+        select(GuardianLink.protected_device_id).where(
+            GuardianLink.guardian_device_id == guardian_device_id,
+            GuardianLink.is_active == True,
+        )
+    ).all()
+
+    # 연결된 보호 대상자가 없으면 빈 목록 반환
+    if not protected_device_ids:
+        return IncidentListResponse(
+            guardian_device_id=guardian_device_id,
+            incidents=[],
+        )
+
+    # 3. 연결된 보호 대상자의 사건 조회 (최신순)
+    incidents = session.exec(
+        select(ScamIncident)
+        .where(
+            ScamIncident.protected_device_id.in_(protected_device_ids)
+        )
+        .order_by(ScamIncident.received_at.desc())
+    ).all()
+
+    # 4. 각 사건에 연결된 이벤트 조회 및 응답 구성
+    incident_infos = []
+
+    for incident in incidents:
+        events = session.exec(
+            select(ScamEvent)
+            .where(
+                ScamEvent.incident_id == incident.id
+            )
+            .order_by(ScamEvent.occurred_at.asc())
+        ).all()
+
+        incident_infos.append(
+            IncidentInfo(
+                incident_id=incident.id,
+                protected_device_id=incident.protected_device_id,
+                level=incident.level,
+                scam_type=incident.scam_type,
+                received_at=incident.received_at,
+                events=[
+                    IncidentEventInfo(
+                        event_type=event.event_type,
+                        occurred_at=event.occurred_at,
+                    )
+                    for event in events
+                ],
+            )
+        )
+
+    # 5. 보호자에게 사건 목록 반환
+    return IncidentListResponse(
+        guardian_device_id=guardian_device_id,
+        incidents=incident_infos,
     )
