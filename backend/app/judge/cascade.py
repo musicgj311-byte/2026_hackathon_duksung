@@ -5,7 +5,7 @@
 ④ 신호 종합
    위험: 수법 의심 + 송금·설치·개인정보 요구·문자 속 번호로 전화 유도
          수법 의심 + 새로 만든 도메인
-         수법 의심 + 모르는 번호가 보낸 링크
+         수법 의심 + 모르는 번호가 보낸 링크 (링크가 모두 공식 도메인이면 이 이유로는 위험이 아님)
    저장된 연락처는 최대 '주의' (악성 URL 목록에 걸린 경우만 위험)
    주의: 수법 의심만 있음 / LLM 시간 초과·실패인데 규칙·링크에 걸린 게 있음
          LLM은 '수법 없음'이지만 모르는 번호에서 사칭 + 요구가 보임
@@ -57,7 +57,8 @@ def _decide_by_llm(
     if verdict.is_scam_like:
         new_domain = any(u.new_domain for u in fast.urls)
         demands = verdict.pushes_action or rules.pushes_action
-        unknown_link = fast.has_url and not from_contact
+        # 공식 도메인 링크만 있으면 '모르는 링크'로 보지 않음 → 다른 근거 없으면 '주의'
+        unknown_link = fast.has_url and not from_contact and not fast.all_official
         if demands or new_domain or unknown_link:
             return Decision(Level.danger, verdict.scam_type, stage=3, use_llm_text=True)
         return Decision(Level.caution, verdict.scam_type, stage=3, use_llm_text=True)

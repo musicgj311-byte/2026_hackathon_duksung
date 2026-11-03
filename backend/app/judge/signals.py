@@ -16,6 +16,7 @@ from dataclasses import asdict, dataclass, field
 
 import httpx
 
+from app.judge.official_domains import is_official_host
 from app.judge.url_check import check_safe_browsing, check_virustotal, domain_age_days
 from app.judge.urls import expand, extract_urls, host_of, registrable_domain
 
@@ -44,6 +45,11 @@ class UrlSignal:
     def new_domain(self) -> bool:
         return self.domain_age_days is not None and self.domain_age_days <= NEW_DOMAIN_DAYS
 
+    @property
+    def official(self) -> bool:
+        """펼친 최종 주소가 공식 도메인 목록에 있는지"""
+        return is_official_host(host_of(self.final))
+
 
 @dataclass
 class FastSignals:
@@ -53,6 +59,11 @@ class FastSignals:
     @property
     def has_url(self) -> bool:
         return bool(self.urls)
+
+    @property
+    def all_official(self) -> bool:
+        """링크가 있고, 모든 링크가 공식 도메인"""
+        return self.has_url and all(u.official for u in self.urls)
 
     @property
     def strong(self) -> bool:
@@ -78,7 +89,9 @@ class FastSignals:
             "strong": self.strong,
             "weak": self.weak,
             "elapsed_ms": self.elapsed_ms,
-            "urls": [asdict(u) | {"strong_hit": u.strong_hit} for u in self.urls],
+            "urls": [
+                asdict(u) | {"strong_hit": u.strong_hit, "official": u.official} for u in self.urls
+            ],
         }
 
 
