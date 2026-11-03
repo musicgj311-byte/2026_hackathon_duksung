@@ -142,6 +142,101 @@ _OTHER: dict[str, dict[Level, Message]] = {
     },
 }
 
+# 영어·베트남어·중국어의 유형별 안내 문구
+# 각 유형의 튜플 순서: (위험 이유, 행동 지침)
+_CATEGORY_TEXT: dict[str, dict[str, tuple[str, str]]] = {
+    "en": {
+        "finance": (
+            "This message pretends to be from a card company and tries to get you to call.",
+            "Do not call the number in this message.",
+        ),
+        "loan": (
+            "It uses a cheap loan offer to trick you into giving away money.",
+            "Check with your bank using its official phone number.",
+        ),
+        "government": (
+            "Government agencies do not collect money through links in text messages.",
+            "Do not tap the link.",
+        ),
+        "delivery": (
+            "This may be a fake delivery message.",
+            "Check in the delivery app or with your tracking number.",
+        ),
+        "invitation": (
+            "It uses a fake invitation to get you to install a dangerous app.",
+            "Call the sender using a number you already know.",
+        ),
+        "family": (
+            "It pretends to be a family member and asks you to send money.",
+            "Call them using their usual phone number to check.",
+        ),
+        "other": (
+            "This message may be trying to steal your money or personal information.",
+            "Do not tap links or send money. Check through an official channel.",
+        ),
+    },
+    "vi": {
+        "finance": (
+            "Tin nhắn giả danh công ty thẻ để dụ bạn gọi điện.",
+            "Đừng gọi số điện thoại trong tin nhắn này.",
+        ),
+        "loan": (
+            "Tin nhắn dùng lời mời vay tiền lãi suất thấp để lừa lấy tiền của bạn.",
+            "Hãy kiểm tra bằng số điện thoại chính thức của ngân hàng.",
+        ),
+        "government": (
+            "Cơ quan nhà nước không thu tiền qua đường link trong tin nhắn.",
+            "Đừng bấm vào đường link.",
+        ),
+        "delivery": (
+            "Đây có thể là tin nhắn giao hàng giả mạo.",
+            "Hãy kiểm tra bằng ứng dụng giao hàng hoặc mã vận đơn.",
+        ),
+        "invitation": (
+            "Tin nhắn dùng thiệp mời giả để dụ bạn cài ứng dụng nguy hiểm.",
+            "Hãy gọi cho người gửi bằng số điện thoại bạn đã biết.",
+        ),
+        "family": (
+            "Tin nhắn giả danh người thân và yêu cầu bạn chuyển tiền.",
+            "Hãy gọi lại bằng số điện thoại quen thuộc của người đó.",
+        ),
+        "other": (
+            "Tin nhắn này có thể đang tìm cách lấy tiền hoặc thông tin cá nhân của bạn.",
+            "Đừng bấm vào đường link hoặc chuyển tiền. Hãy kiểm tra qua kênh chính thức.",
+        ),
+    },
+    "zh": {
+        "finance": (
+            "这条短信冒充银行卡公司，诱导你打电话。",
+            "不要拨打这条短信中的电话号码。",
+        ),
+        "loan": (
+            "这条短信用低息贷款作诱饵，试图骗走你的钱。",
+            "请使用银行的官方电话号码进行确认。",
+        ),
+        "government": (
+            "政府机构不会通过短信链接收取费用。",
+            "不要点击链接。",
+        ),
+        "delivery": (
+            "这可能是一条虚假的快递短信。",
+            "请通过快递应用或运单号进行确认。",
+        ),
+        "invitation": (
+            "这条短信利用假邀请函诱导你安装危险的应用。",
+            "请使用你已知的电话号码联系发件人。",
+        ),
+        "family": (
+            "这条短信冒充家人，要求你转账。",
+            "请使用家人原来的电话号码直接联系确认。",
+        ),
+        "other": (
+            "这条短信可能试图骗取你的钱或个人信息。",
+            "不要点击链接或转账，请通过官方渠道确认。",
+        ),
+    },
+}
+
 
 def base_language(language: str) -> str:
     """'vi-VN' → 'vi', 'ZH' → 'zh'"""
@@ -153,26 +248,38 @@ def get_fixed_message(
     scam_type: ScamType,
     language: str,
 ) -> Message:
-    """최신 기획안 기준으로 고정 안내 문구를 반환합니다."""
+    """최신 기획안 기준으로 다국어 고정 안내 문구를 반환합니다."""
 
     lang = base_language(language)
-
-    # 한국어가 아닌 언어는 기존 공통 문구 사용
-    if lang != "ko":
-        return _OTHER.get(lang, _OTHER["en"])[level]
-
-    # 안전 판정은 공통 문구 사용
-    if level is Level.safe:
-        return _KO_SAFE
 
     # 기존 ScamType을 최신 분류로 변환
     category = _CATEGORY_BY_SCAM_TYPE.get(scam_type, "other")
 
+    # 안전 판정은 언어별 공통 문구 사용
+    if level is Level.safe:
+        return _KO_SAFE if lang == "ko" else _OTHER.get(lang, _OTHER["en"])[level]
+
+    # 한국어 문구
+    if lang == "ko":
+        return Message(
+            title=_KO_TITLE[level],
+            explanation=_KO_REASON[category],
+            action=_KO_ACTION[category],
+            easy_sentence=_KO_EASY[level],
+        )
+
+    # 지원 언어의 유형별 문구
+    language_messages = _OTHER.get(lang, _OTHER["en"])
+    category_messages = _CATEGORY_TEXT.get(lang, _CATEGORY_TEXT["en"])
+
+    explanation, action = category_messages[category]
+    common_message = language_messages[level]
+
     return Message(
-        title=_KO_TITLE[level],
-        explanation=_KO_REASON[category],
-        action=_KO_ACTION[category],
-        easy_sentence=_KO_EASY[level],
+        title=common_message.title,
+        explanation=explanation,
+        action=action,
+        easy_sentence=common_message.easy_sentence,
     )
 
 
