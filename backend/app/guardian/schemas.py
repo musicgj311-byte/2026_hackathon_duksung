@@ -70,3 +70,24 @@ class NotificationInfo(BaseModel):
 class NotificationListResponse(BaseModel):
     guardian_device_id: str
     notifications: list[NotificationInfo]
+
+# 11. 사건별 이벤트 정보
+class IncidentEventInfo(BaseModel):
+    event_type: str
+    occurred_at: datetime
+
+
+# 12. 사건 정보 및 이벤트 목록
+class IncidentInfo(BaseModel):
+    incident_id: int
+    protected_device_id: str
+    level: str
+    scam_type: str
+    received_at: datetime
+    events: list[IncidentEventInfo]
+
+
+# 13. 보호자 사건 타임라인 조회 결과
+class IncidentListResponse(BaseModel):
+    guardian_device_id: str
+    incidents: list[IncidentInfo]
