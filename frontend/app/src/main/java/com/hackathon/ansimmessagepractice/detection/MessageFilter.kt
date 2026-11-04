@@ -37,6 +37,26 @@ object MessageFilter {
 
     fun hasUrl(message: String): Boolean = link.containsMatchIn(message)
 
+    /**
+     * 로컬 판정과 서버 재검사의 대상을 결정합니다.
+     *
+     * - 위험 패턴/URL/국제발신은 서버 재검사
+     * - SMS 발신 번호가 명확히 연락처에 없는 경우 서버 재검사
+     * - 연락처 조회 불가(null)와 카카오톡 표시 이름을 미등록 번호로 단정하지 않음
+     * - 서버가 꺼져 있을 때는 호출자가 classify() 결과가 있는 경우에만 로컬 경고 표시
+     *
+     * 최종 위험도는 서버에서 판정합니다. 이 함수가 true여도 위험 판정은 아닙니다.
+     */
+    fun shouldSendToServer(
+        message: String,
+        source: String,
+        isContact: Boolean?,
+        isInternational: Boolean
+    ): Boolean {
+        if (classify(message) != null || hasUrl(message) || isInternational) return true
+        return source == "sms" && isContact == false
+    }
+
     fun classify(message: String): Alert? {
         val text = message.trim()
         if (text.length < 8) return null

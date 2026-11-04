@@ -180,6 +180,7 @@ class NotificationService : NotificationListenerService() {
     }
 
     private fun showServerVerdict(result: JudgeVerdict, source: String, sender: String, content: String) {
+        Log.i("AnsimNotification", "판정 출처=server level=${result.level} scamType=${result.scamType} (원문 미기록)")
         overlay?.dismissChecking()
         if (result.level == "safe") return
         val type = when (result.scamType) {
@@ -223,6 +224,7 @@ class NotificationService : NotificationListenerService() {
     }
 
     private fun showLocalPreview(alert: MessageFilter.Alert, content: String, sender: String, source: String) {
+        Log.i("AnsimNotification", "판정 출처=local level=${alert.risk} scamType=${alert.scamType} (원문 미기록)")
         val type = when (alert.scamType) {
             "family_impersonation" -> "가족 사칭 의심"
             "delivery" -> "택배 사칭 의심"
