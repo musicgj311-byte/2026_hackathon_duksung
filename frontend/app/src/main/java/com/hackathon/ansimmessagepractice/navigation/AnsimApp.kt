@@ -8,6 +8,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.platform.LocalContext
 import com.hackathon.ansimmessagepractice.WarningLaunch
 import com.hackathon.ansimmessagepractice.data.api.BackendConfig
+import com.hackathon.ansimmessagepractice.data.api.GuardianNotificationRecord
 import com.hackathon.ansimmessagepractice.data.api.UserSync
 import com.hackathon.ansimmessagepractice.guardian.PairingIntegration
 import com.hackathon.ansimmessagepractice.detection.AlertRecord
@@ -30,6 +31,7 @@ import kotlinx.coroutines.launch
 
 /**
  * 실제 백엔드 주소가 설정되면 사용자 등록/보호자 페어링을 호출합니다.
+ * 프론트 1이 /judge 응답을 전달할 때 WarningLaunch에 동일한 필드를 채우면 됩니다.
  */
 @Composable
 fun AnsimApp(
@@ -51,6 +53,7 @@ fun AnsimApp(
     var activeWarning by remember { mutableStateOf(warningLaunch) }
     var alertDetailLevel by remember { mutableStateOf("danger") }
     var selectedAlert by remember { mutableStateOf<AlertRecord?>(null) }
+    var selectedGuardianAlert by remember { mutableStateOf<GuardianNotificationRecord?>(null) }
     var guardianFromHome by remember { mutableStateOf(false) }
     var manualReturnTo by remember { mutableStateOf("home") }
     var permissionsReturnTo by remember { mutableStateOf("home") }
@@ -62,6 +65,13 @@ fun AnsimApp(
 
     LaunchedEffect(launcherOpenKey) {
         if (launcherOpenKey > 0) { activeWarning = null; currentScreen = "splash" }
+    }
+    // 프로세스 복원 시 상세 화면 기록은 메모리에서 사라질 수 있습니다.
+    // 실제 보호자 기록 없이 시연 데이터를 잘못 보여주지 않도록 목록으로 돌아갑니다.
+    LaunchedEffect(currentScreen, selectedGuardianAlert) {
+        if (currentScreen == "guardian_alert_detail" && selectedGuardianAlert == null) {
+            currentScreen = "guardian_home"
+        }
     }
     LaunchedEffect(warningLaunch?.requestId) {
         warningLaunch?.let { incoming ->
@@ -125,6 +135,7 @@ fun AnsimApp(
         "guardian" -> if (guardianFromHome) "guardian_manage" else "language"
         "guardian_manage" -> "home"
         "settings", "guardian_preview", "alert_detail" -> "home"
+        "guardian_alert_detail" -> "guardian_home"
         "permissions_settings" -> permissionsReturnTo
         "backend_settings" -> backendReturnTo
         "manual_call" -> manualReturnTo
@@ -139,8 +150,6 @@ fun AnsimApp(
         if (previous != null) currentScreen = previous
     }
 
-    // 화면 이동은 Navigation 라이브러리 대신 currentScreen 문자열 상태로 관리합니다.
-    // 새 화면을 추가하면 아래 분기와 이전 화면(previous) 이동 규칙을 함께 확인하세요.
     when (currentScreen) {
         "splash" -> SplashScreen {
             currentRole = prefs.getString("role", "protected") ?: "protected"
@@ -185,7 +194,8 @@ fun AnsimApp(
             onNotificationSettings = { guardianNotifyFromHome = true; currentScreen = "guardian_notify" },
             onBackendSettings = { backendReturnTo = "guardian_home"; currentScreen = "backend_settings" },
             onManualCall = { manualReturnTo = "guardian_home"; currentScreen = "manual_call" },
-            onChangeRole = { requestRoleChange() }
+            onChangeRole = { requestRoleChange() },
+            onAlertClick = { record -> selectedGuardianAlert = record; currentScreen = "guardian_alert_detail" }
         )
         "permission" -> PermissionScreen(
             onNextClick = { currentScreen = "select" },
@@ -240,6 +250,11 @@ fun AnsimApp(
         "guardian_preview" -> GuardianAlertScreen(
             onBackClick = { currentScreen = "home" },
             onManualNumberClick = { manualReturnTo = "guardian_preview"; currentScreen = "manual_call" }
+        )
+        "guardian_alert_detail" -> GuardianAlertScreen(
+            onBackClick = { currentScreen = "guardian_home" },
+            onManualNumberClick = { manualReturnTo = "guardian_alert_detail"; currentScreen = "manual_call" },
+            record = selectedGuardianAlert
         )
         "alert_detail" -> AlertDetailScreen(level = alertDetailLevel, record = selectedAlert,
             onBack = { currentScreen = "home" },

@@ -19,6 +19,8 @@ import com.hackathon.ansimmessagepractice.ui.onboarding.AnsimPrimaryButton
 import com.hackathon.ansimmessagepractice.data.api.BackendConfig
 import com.hackathon.ansimmessagepractice.data.api.GuardianApi
 import com.hackathon.ansimmessagepractice.data.api.GuardianNotificationRecord
+import com.hackathon.ansimmessagepractice.data.api.formatGuardianEventTime
+import com.hackathon.ansimmessagepractice.data.api.guardianScamTypeName
 import com.hackathon.ansimmessagepractice.ui.theme.*
 import kotlinx.coroutines.launch
 
@@ -26,7 +28,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun GuardianHomeScreen(onInputCode: () -> Unit, onManualCall: () -> Unit,
                        onChangeRole: () -> Unit, onNotificationSettings: () -> Unit,
-                       onBackendSettings: () -> Unit) {
+                       onBackendSettings: () -> Unit, onAlertClick: (GuardianNotificationRecord) -> Unit) {
     val context = LocalContext.current
     val prefs = remember(context) { context.getSharedPreferences("ansim_settings", Context.MODE_PRIVATE) }
     val scope = rememberCoroutineScope()
@@ -145,9 +147,13 @@ fun GuardianHomeScreen(onInputCode: () -> Unit, onManualCall: () -> Unit,
                         Text("서버에 기록된 가족 알림이 없어요.", color = AnsimMuted, fontSize = 13.sp)
                     } else {
                         notificationRecords.take(5).forEach { record ->
-                            Text("${if (record.level == "danger") "위험" else "주의"} · ${record.scamType} · ${record.status}",
-                                color = AnsimInk, fontSize = 13.sp)
-                            Text(record.sentAt.take(19).replace('T', ' '), color = AnsimMuted, fontSize = 11.sp)
+                            Column(Modifier.fillMaxWidth().clickable { onAlertClick(record) }
+                                .padding(vertical = 9.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                                Text("${if (record.level == "danger") "위험" else "주의"} · ${guardianScamTypeName(record.scamType)}",
+                                    color = AnsimInk, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                                Text("알림 전송 시각: ${formatGuardianEventTime(record.sentAt)} · 상세 보기 ›",
+                                    color = AnsimMuted, fontSize = 12.sp)
+                            }
                             HorizontalDivider(color = AnsimCream)
                         }
                     }
