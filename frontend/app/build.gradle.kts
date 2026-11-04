@@ -4,13 +4,13 @@ plugins {
 }
 
 android {
-    namespace = "com.hackathon.safelink"
+    namespace = "com.hackathon.ansimmessagepractice"
     compileSdk {
         version = release(37)
     }
 
     defaultConfig {
-        applicationId = "com.hackathon.safelink"
+        applicationId = "com.hackathon.ansimmessagepractice"
         minSdk = 26
         targetSdk = 37
         versionCode = 1
