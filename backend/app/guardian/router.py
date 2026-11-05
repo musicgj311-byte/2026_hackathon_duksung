@@ -1,36 +1,35 @@
 import hashlib
 import secrets
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import firebase_admin
-from firebase_admin import messaging
 from fastapi import APIRouter, Depends, HTTPException, status
+from firebase_admin import messaging
 from sqlmodel import Session, select
 
-from app.database import get_session, engine
-from app.models import (
-    Device,
-    GuardianLink,
-    PairingCode,
-    NotificationLog,
-    ScamIncident,
-    ScamEvent,
-)
-
+from app.database import engine, get_session
 from app.guardian.schemas import (
-    PairingCodeRequest,
-    PairingCodeResponse,
     GuardianConnectRequest,
     GuardianConnectResponse,
     GuardianDisconnectRequest,
     GuardianDisconnectResponse,
-    ProtectedUserInfo,
-    ProtectedUserListResponse,
-    NotificationInfo,
-    NotificationListResponse,
     IncidentEventInfo,
     IncidentInfo,
     IncidentListResponse,
+    NotificationInfo,
+    NotificationListResponse,
+    PairingCodeRequest,
+    PairingCodeResponse,
+    ProtectedUserInfo,
+    ProtectedUserListResponse,
+)
+from app.models import (
+    Device,
+    GuardianLink,
+    NotificationLog,
+    PairingCode,
+    ScamEvent,
+    ScamIncident,
 )
 
 router = APIRouter(prefix="/guardian", tags=["guardian"])
@@ -38,7 +37,7 @@ router = APIRouter(prefix="/guardian", tags=["guardian"])
 
 # 현재 시간 가져오기
 def get_current_time() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 # 연결 코드를 해시값으로 변환
@@ -169,7 +168,7 @@ def connect_guardian(
 
     # SQLite에서 timezone 정보가 사라진 경우 보정
     if expires_at.tzinfo is None:
-        expires_at = expires_at.replace(tzinfo=timezone.utc)
+        expires_at = expires_at.replace(tzinfo=UTC)
 
     if expires_at <= get_current_time():
         raise HTTPException(
@@ -330,8 +329,19 @@ async def notify_guardians(
                 link.guardian_device_id,
             )
 
-            # 보호자 정보가 없거나 FCM 토큰이 없으면 건너뜀
-            if not guardian or not guardian.fcm_token:
+            if not guardian:
+                continue
+
+            # 푸시 토큰이 없으면 전송은 건너뛰고 기록만 남김 (보호자 앱 목록에 표시용)
+            if not guardian.fcm_token:
+                session.add(NotificationLog(
+                    protected_device_id=device_id,
+                    guardian_device_id=guardian.device_id,
+                    level=level,
+                    scam_type=scam_type,
+                    status="no_token",
+                ))
+                session.commit()
                 continue
 
             # 푸시 알림 내용 구성
