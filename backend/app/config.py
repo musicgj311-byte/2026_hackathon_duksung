@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     safe_browsing_api_key: str = ""
     virustotal_api_key: str = ""
     firebase_credentials_path: str = "firebase-key.json"
+    firebase_credentials_base64: str = ""
     use_fake_judge: bool = True
 
 
