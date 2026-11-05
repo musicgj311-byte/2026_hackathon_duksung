@@ -43,12 +43,20 @@ fun formatGuardianEventTime(value: String?): String {
     return local?.format(fmt) ?: "기록 없음"
 }
 
-fun guardianScamTypeName(type: String): String = when (type.lowercase()) {
-    "family_impersonation", "family", "가족 사칭" -> "가족 사칭"
-    "delivery", "delivery_impersonation", "택배 사칭" -> "택배 사칭"
-    "institution", "agency_impersonation", "기관 사칭" -> "기관 사칭"
-    "none", "unknown", "" -> "사기 의심"
-    else -> type.replace('_', ' ').take(30)
+/** 서버의 영어 수법 코드는 절대로 이용자에게 그대로 보여주지 않습니다. */
+fun guardianScamTypeName(type: String): String = when (
+    type.trim().lowercase(java.util.Locale.ROOT).replace('-', '_').replace(' ', '_')
+) {
+    "family_impersonation", "family", "가족_사칭" -> "가족 사칭"
+    "delivery", "delivery_impersonation", "택배_사칭" -> "택배 사칭"
+    "institution", "agency", "agency_impersonation", "institution_impersonation", "기관_사칭" -> "기관 사칭"
+    "obituary_invitation", "obituary", "invitation" -> "부고·초대장 사칭"
+    "subsidy_refund", "refund", "subsidy" -> "지원금·환급 사칭"
+    "payment_alert", "payment", "card_payment", "payment_impersonation" -> "결제 알림 사칭"
+    "job_loan", "job", "loan" -> "구인·대출 사칭"
+    "immigration", "visa" -> "출입국·체류 사칭"
+    "phishing", "smishing", "unknown", "none", "", "null" -> "사기 의심"
+    else -> "기타 사기 의심"
 }
 
 object GuardianApi {

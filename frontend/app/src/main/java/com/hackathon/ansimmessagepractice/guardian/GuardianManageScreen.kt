@@ -2,6 +2,8 @@ package com.hackathon.ansimmessagepractice.guardian
 
 import android.content.Context
 import androidx.compose.foundation.background
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -43,37 +45,39 @@ fun GuardianManageScreen(onBack: () -> Unit, onEdit: () -> Unit) {
         .padding(horizontal = 24.dp, vertical = 14.dp)) {
         TextButton(onClick = onBack) { Text("‹  보호자 관리", fontSize = 18.sp, color = AnsimInk,
             fontWeight = FontWeight.Bold) }
-        Spacer(Modifier.height(22.dp))
-        if (hasPhone) {
-            HorizontalDivider(color = AnsimInk)
-            ContactInfo("이름", name.ifBlank { "가족" } + if (relation.isNotBlank()) " ($relation)" else "")
-            ContactInfo("전화번호", phone)
-            ContactInfo("등록일", if (savedAt > 0) DateFormat.getDateInstance(DateFormat.MEDIUM).format(Date(savedAt)) else "이전 등록")
+        Spacer(Modifier.height(12.dp))
+        Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
+            if (hasPhone) {
+                HorizontalDivider(color = AnsimInk)
+                ContactInfo("이름", name.ifBlank { "가족" } + if (relation.isNotBlank()) " ($relation)" else "")
+                ContactInfo("전화번호", phone)
+                ContactInfo("등록일", if (savedAt > 0) DateFormat.getDateInstance(DateFormat.MEDIUM).format(Date(savedAt)) else "이전 등록")
+                Spacer(Modifier.height(20.dp))
+                Text("전화할 가족 연락처가 기기에 저장되어 있어요.", color = AnsimProtected, fontSize = 13.sp)
+            } else {
+                Text("등록된 보호자 연락처가 없어요", fontSize = 23.sp,
+                    fontWeight = FontWeight.ExtraBold, color = AnsimInk)
+                Spacer(Modifier.height(8.dp))
+                Text("등록하면 위험 경고 화면에서 안전하게 가족에게 전화할 수 있어요.",
+                    color = AnsimMuted, fontSize = 14.sp, lineHeight = 21.sp)
+            }
+            Spacer(Modifier.height(17.dp))
+            Surface(color = AnsimMint, shape = RoundedCornerShape(9.dp)) {
+                Text("보호자 자동 알림 연결은 별도의 서버 페어링이 필요해요. 이 화면은 기기에 저장한 연락처를 관리해요.",
+                    Modifier.fillMaxWidth().padding(13.dp), color = AnsimGreenDark, fontSize = 12.sp, lineHeight = 19.sp)
+            }
             Spacer(Modifier.height(20.dp))
-            Text("전화할 가족 연락처가 기기에 저장되어 있어요.", color = AnsimProtected, fontSize = 13.sp)
-        } else {
-            Text("등록된 보호자 연락처가 없어요", fontSize = 23.sp,
-                fontWeight = FontWeight.ExtraBold, color = AnsimInk)
-            Spacer(Modifier.height(8.dp))
-            Text("등록하면 위험 경고 화면에서 안전하게 가족에게 전화할 수 있어요.",
-                color = AnsimMuted, fontSize = 14.sp, lineHeight = 21.sp)
+            OutlinedButton(onClick = onEdit, modifier = Modifier.fillMaxWidth().heightIn(min = 51.dp),
+                shape = RoundedCornerShape(8.dp)) {
+                Text(if (hasPhone) "보호자 변경" else "보호자 등록", color = AnsimInk, fontWeight = FontWeight.Bold)
+            }
+            if (hasPhone) {
+                Spacer(Modifier.height(10.dp))
+                OutlinedButton(onClick = { confirming = true }, modifier = Modifier.fillMaxWidth().heightIn(min = 51.dp),
+                    shape = RoundedCornerShape(8.dp)) { Text("연락처 삭제", color = AnsimDanger) }
+            }
         }
-        Spacer(Modifier.height(17.dp))
-        Surface(color = AnsimMint, shape = RoundedCornerShape(9.dp)) {
-            Text("보호자 자동 알림 연결은 별도의 서버 페어링이 필요해요. 이 화면은 기기에 저장한 연락처를 관리해요.",
-                Modifier.fillMaxWidth().padding(13.dp), color = AnsimGreenDark, fontSize = 12.sp, lineHeight = 19.sp)
-        }
-        Spacer(Modifier.height(20.dp))
-        OutlinedButton(onClick = onEdit, modifier = Modifier.fillMaxWidth().height(51.dp),
-            shape = RoundedCornerShape(8.dp)) {
-            Text(if (hasPhone) "보호자 변경" else "보호자 등록", color = AnsimInk, fontWeight = FontWeight.Bold)
-        }
-        if (hasPhone) {
-            Spacer(Modifier.height(10.dp))
-            OutlinedButton(onClick = { confirming = true }, modifier = Modifier.fillMaxWidth().height(51.dp),
-                shape = RoundedCornerShape(8.dp)) { Text("연락처 삭제", color = AnsimDanger) }
-        }
-        Spacer(Modifier.weight(1f))
+        Spacer(Modifier.height(12.dp))
         AnsimPrimaryButton("홈으로", onBack)
     }
 }

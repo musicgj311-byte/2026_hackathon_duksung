@@ -69,7 +69,7 @@ fun AlertDetailScreen(level: String, onBack: () -> Unit, onManualNumber: () -> U
         }
         Spacer(Modifier.height(12.dp))
         Button(onClick = { if (hasCall) callGuardian() else onManualNumber() },
-            modifier = Modifier.fillMaxWidth().height(54.dp), shape = RoundedCornerShape(7.dp),
+            modifier = Modifier.fillMaxWidth().heightIn(min = 54.dp), shape = RoundedCornerShape(7.dp),
             colors = ButtonDefaults.buttonColors(containerColor = AnsimGreen)) {
             Text(if (hasCall) "☎  보호자에게 전화" else "☎  전화번호 직접 입력", fontWeight = FontWeight.Bold)
         }

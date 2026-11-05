@@ -26,7 +26,7 @@ fun UserTypeScreen(selectedType: String, onTypeSelected: (String) -> Unit,
         .padding(horizontal = 25.dp, vertical = 17.dp)) {
         OnboardingStepHeader(2, onBackClick)
         Spacer(Modifier.height(20.dp))
-        Text("위험할 때\n어떻게 알려드릴까요?", color = AnsimInk, fontSize = 28.sp,
+        Text("위험할 때 어떻게 알려드릴까요?", color = AnsimInk, fontSize = 28.sp,
             fontWeight = FontWeight.ExtraBold, lineHeight = 35.sp)
         Spacer(Modifier.height(6.dp))
         Text("설정에서 언제든 바꿀 수 있어요.", color = AnsimMuted, fontSize = 14.sp)

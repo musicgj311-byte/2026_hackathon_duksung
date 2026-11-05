@@ -45,7 +45,7 @@ fun GuardianScreen(onSkipClick: () -> Unit, onBackClick: () -> Unit, fromHome: B
         Spacer(Modifier.height(23.dp))
         when (stage) {
             0 -> {
-                Text("보호자 정보를\n입력해 주세요", fontSize = 28.sp, lineHeight = 36.sp,
+                Text("보호자 정보를 입력해 주세요", fontSize = 28.sp, lineHeight = 36.sp,
                     fontWeight = FontWeight.ExtraBold, color = AnsimInk)
                 Spacer(Modifier.height(8.dp))
                 Text("위험할 때 바로 전화할 수 있도록 믿을 수 있는 가족 번호를 등록해요.",
@@ -78,17 +78,19 @@ fun GuardianScreen(onSkipClick: () -> Unit, onBackClick: () -> Unit, fromHome: B
                 }
             }
             1 -> {
-                Text("보호자 정보를\n확인해 주세요", fontSize = 28.sp, lineHeight = 36.sp,
-                    fontWeight = FontWeight.ExtraBold, color = AnsimInk)
-                Spacer(Modifier.height(24.dp))
-                HorizontalDivider(color = AnsimInk)
-                GuardianInfoRow("이름", name.trim())
-                GuardianInfoRow("관계", relationship.trim().ifBlank { "미입력" })
-                GuardianInfoRow("전화번호", cleanPhone)
-                Text("등록하면 경고 화면에서 이 번호로 직접 전화할 수 있어요. 위험 문자 원문은 가족에게 전송되지 않아요.",
-                    color = AnsimMuted, fontSize = 13.sp, lineHeight = 21.sp,
-                    modifier = Modifier.padding(top = 18.dp))
-                Spacer(Modifier.weight(1f))
+                Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
+                    Text("보호자 정보를 확인해 주세요", fontSize = 28.sp, lineHeight = 36.sp,
+                        fontWeight = FontWeight.ExtraBold, color = AnsimInk)
+                    Spacer(Modifier.height(24.dp))
+                    HorizontalDivider(color = AnsimInk)
+                    GuardianInfoRow("이름", name.trim())
+                    GuardianInfoRow("관계", relationship.trim().ifBlank { "미입력" })
+                    GuardianInfoRow("전화번호", cleanPhone)
+                    Text("등록하면 경고 화면에서 이 번호로 직접 전화할 수 있어요. 위험 문자 원문은 가족에게 전송되지 않아요.",
+                        color = AnsimMuted, fontSize = 13.sp, lineHeight = 21.sp,
+                        modifier = Modifier.padding(top = 18.dp))
+                }
+                Spacer(Modifier.height(12.dp))
                 AnsimPrimaryButton("보호자로 등록", {
                     prefs.edit().putString("guardian_name", name.trim())
                         .putString("guardian_relationship", relationship.trim())
@@ -97,21 +99,23 @@ fun GuardianScreen(onSkipClick: () -> Unit, onBackClick: () -> Unit, fromHome: B
                     stage = 2
                 })
                 Spacer(Modifier.height(8.dp))
-                OutlinedButton(onClick = { stage = 0 }, modifier = Modifier.fillMaxWidth().height(50.dp)) {
+                OutlinedButton(onClick = { stage = 0 }, modifier = Modifier.fillMaxWidth().heightIn(min = 50.dp)) {
                     Text("다시 입력", color = AnsimInk)
                 }
             }
             else -> {
-                Text("✓", color = AnsimProtected, fontSize = 48.sp, fontWeight = FontWeight.Bold)
+                Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
+                    Text("✓", color = AnsimProtected, fontSize = 48.sp, fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.height(12.dp))
+                    Text("${name.trim()} 님의 전화번호를 저장했어요", color = AnsimInk,
+                        fontSize = 28.sp, lineHeight = 36.sp, fontWeight = FontWeight.ExtraBold)
+                    Spacer(Modifier.height(23.dp))
+                    HorizontalDivider(color = Color(0xFFEDF0F2))
+                    GuardianSuccessRow("☎", "경고 화면에서 버튼 하나로 전화할 수 있어요")
+                    GuardianSuccessRow("⚠", "서버 연결이 완료되기 전에는 보호자 알림이 전송되지 않아요")
+                    GuardianSuccessRow("▣", "받은 문자 원문은 보호자에게 전송하지 않아요")
+                }
                 Spacer(Modifier.height(12.dp))
-                Text("${name.trim()} 님의\n전화번호를 저장했어요", color = AnsimInk,
-                    fontSize = 28.sp, lineHeight = 36.sp, fontWeight = FontWeight.ExtraBold)
-                Spacer(Modifier.height(23.dp))
-                HorizontalDivider(color = Color(0xFFEDF0F2))
-                GuardianSuccessRow("☎", "경고 화면에서 버튼 하나로 전화할 수 있어요")
-                GuardianSuccessRow("⚠", "서버 연결이 완료되기 전에는 보호자 알림이 전송되지 않아요")
-                GuardianSuccessRow("▣", "받은 문자 원문은 보호자에게 전송하지 않아요")
-                Spacer(Modifier.weight(1f))
                 AnsimPrimaryButton(if (fromHome) "보호자 관리로" else "홈으로", onSkipClick)
             }
         }

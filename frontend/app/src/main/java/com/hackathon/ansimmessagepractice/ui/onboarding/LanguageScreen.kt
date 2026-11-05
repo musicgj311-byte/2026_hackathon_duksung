@@ -22,14 +22,14 @@ fun LanguageScreen(selectedLanguage: String, onLanguageSelected: (String) -> Uni
         .padding(horizontal = 25.dp, vertical = 17.dp)) {
         OnboardingStepHeader(3, onBackClick)
         Spacer(Modifier.height(20.dp))
-        Text("안내 언어를\n선택해 주세요", fontSize = 28.sp, lineHeight = 35.sp,
+        Text("안내 언어를 선택해 주세요", fontSize = 28.sp, lineHeight = 35.sp,
             fontWeight = FontWeight.ExtraBold, color = AnsimInk)
         Spacer(Modifier.height(6.dp))
         Text("경고 화면과 음성 안내에 적용돼요.", fontSize = 14.sp, color = AnsimMuted)
         Spacer(Modifier.height(25.dp))
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
             listOf("한국어", "English", "Tiếng Việt", "中文").forEach { language ->
-                Row(Modifier.fillMaxWidth().height(61.dp).clickable { onLanguageSelected(language) },
+                Row(Modifier.fillMaxWidth().heightIn(min = 61.dp).clickable { onLanguageSelected(language) },
                     verticalAlignment = Alignment.CenterVertically) {
                     Text(language, Modifier.weight(1f), color = AnsimInk, fontSize = 17.sp,
                         fontWeight = FontWeight.Medium)

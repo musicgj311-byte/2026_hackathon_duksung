@@ -19,10 +19,13 @@ import com.hackathon.ansimmessagepractice.ui.theme.*
 internal fun AnsimPrimaryButton(text: String, onClick: () -> Unit, enabled: Boolean = true) {
     Button(
         onClick = onClick, enabled = enabled,
-        modifier = Modifier.fillMaxWidth().height(54.dp),
+        modifier = Modifier.fillMaxWidth().heightIn(min = 54.dp),
         shape = RoundedCornerShape(7.dp),
         colors = ButtonDefaults.buttonColors(containerColor = AnsimGreen, contentColor = Color.White)
-    ) { Text(text, fontSize = 17.sp, fontWeight = FontWeight.Bold) }
+    ) {
+        Text(text, fontSize = 17.sp, fontWeight = FontWeight.Bold,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center, lineHeight = 23.sp)
+    }
 }
 
 @Composable

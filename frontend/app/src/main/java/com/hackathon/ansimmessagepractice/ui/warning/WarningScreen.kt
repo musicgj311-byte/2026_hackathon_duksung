@@ -182,8 +182,9 @@ fun WarningScreen(
     LaunchedEffect(hearingMode, data.level) {
         flashVisible = false
         if (hearingMode && (danger || caution)) {
-            // 광과민성 고려: 빠른 무한 점멸 대신 약한 대비로 3회만 알림.
-            repeat(3) {
+            // 광과민성 고려: 강한 명암 전환 없이 약한 배경 강조를 10회 반복합니다.
+            // 화면을 벗어나면 LaunchedEffect가 취소되므로 점멸도 중단됩니다.
+            repeat(10) {
                 flashVisible = true
                 delay(350)
                 flashVisible = false
@@ -505,7 +506,7 @@ fun WarningScreen(
                 }
             }
         }
-        // 빠른 무한 점멸을 피하고 진한 색 대신 아주 약한 배경 강조 3회만 표시합니다.
+        // 빠른 무한 점멸을 피하고 진한 색 대신 아주 약한 배경 강조를 표시합니다.
         if (flashVisible) {
             Box(Modifier.fillMaxSize().background(accentColor.copy(alpha = 0.10f)))
         }

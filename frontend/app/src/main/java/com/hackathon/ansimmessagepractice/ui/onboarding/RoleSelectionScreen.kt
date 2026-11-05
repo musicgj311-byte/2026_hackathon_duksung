@@ -1,6 +1,8 @@
 package com.hackathon.ansimmessagepractice.ui.onboarding
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -22,10 +24,11 @@ fun RoleSelectionScreen(
     changingRole: Boolean = false
 ) {
     Column(Modifier.fillMaxSize().background(Color.White).statusBarsPadding().navigationBarsPadding()
+        .verticalScroll(rememberScrollState())
         .padding(horizontal = 25.dp, vertical = 18.dp)) {
         TextButton(onClick = onBackClick) { Text("‹  이전", color = AnsimInk) }
         Spacer(Modifier.height(22.dp))
-        Text("안심문자를 어떻게\n사용하시겠어요?", color = AnsimInk,
+        Text("안심문자를 어떻게 사용하시겠어요?", color = AnsimInk,
             fontSize = 28.sp, lineHeight = 37.sp, fontWeight = FontWeight.ExtraBold)
         Spacer(Modifier.height(9.dp))
         Text("나에게 맞는 사용 방법을 선택해 주세요.", color = AnsimMuted, fontSize = 14.sp)
@@ -38,7 +41,7 @@ fun RoleSelectionScreen(
         RoleOption("✓", "보호받기", "보호 대상자", "받은 문자를 확인하고\n위험하면 가족에게 알려요.", onProtectedSelected)
         Spacer(Modifier.height(14.dp))
         RoleOption("♡", "가족 보호하기", "보호자", "연결된 가족에게 위험 문자가 오면\n알림을 받아요.", onGuardianSelected)
-        Spacer(Modifier.weight(1f))
+        Spacer(Modifier.height(26.dp))
         Text("선택한 역할은 나중에 설정에서 바꿀 수 있어요.", color = AnsimMuted,
             fontSize = 12.sp, modifier = Modifier.fillMaxWidth())
     }

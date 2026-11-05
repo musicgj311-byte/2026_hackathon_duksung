@@ -14,6 +14,8 @@ import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
 import kotlin.math.min
+import com.hackathon.ansimmessagepractice.ui.onboarding.usesLargeText
+import com.hackathon.ansimmessagepractice.ui.onboarding.BIG_TEXT_FONT_MULTIPLIER
 
 /** 의심 메시지를 분석하는 동안 잠깐 보여주는 작은 진행 상태 표시입니다. 사용자가 직접 누르는 UI는 아닙니다. */
 internal class CheckingOverlay(private val context: Context) {
@@ -29,6 +31,8 @@ internal class CheckingOverlay(private val context: Context) {
 
         val prefs = context.getSharedPreferences("ansim_settings", Context.MODE_PRIVATE)
         val mode = prefs.getString("notification_type", "기본 알림").orEmpty()
+        val uiFontScale = if (usesLargeText(mode, prefs.getString("role", "protected")))
+            BIG_TEXT_FONT_MULTIPLIER else 1f
         val language = prefs.getString("language", "한국어").orEmpty()
         val title = when {
             mode == "쉬운 안내" -> "잠깐 기다려 주세요"
@@ -67,13 +71,13 @@ internal class CheckingOverlay(private val context: Context) {
         val labels = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL }
         labels.addView(TextView(context).apply {
             text = title
-            textSize = if (mode == "화면 안내 중심") 20f else 18f
+            textSize = (if (mode == "화면 안내 중심") 20f else 18f) * uiFontScale
             setTypeface(null, Typeface.BOLD)
             setTextColor(green)
         })
         labels.addView(TextView(context).apply {
             text = subtitle
-            textSize = if (mode == "화면 안내 중심") 16f else 14f
+            textSize = (if (mode == "화면 안내 중심") 16f else 14f) * uiFontScale
             setTextColor(Color.rgb(85, 91, 88))
         })
         chip.addView(labels, LinearLayout.LayoutParams(0, -2, 1f))

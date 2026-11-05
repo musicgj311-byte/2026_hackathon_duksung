@@ -17,6 +17,8 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import com.hackathon.ansimmessagepractice.navigation.openWarningDetails
+import com.hackathon.ansimmessagepractice.ui.onboarding.usesLargeText
+import com.hackathon.ansimmessagepractice.ui.onboarding.BIG_TEXT_FONT_MULTIPLIER
 import com.hackathon.ansimmessagepractice.ui.warning.vibrateSafely
 import com.hackathon.ansimmessagepractice.ui.warning.OverlaySpeech
 import com.hackathon.ansimmessagepractice.ui.warning.spokenAccessibilityEnabled
@@ -27,6 +29,13 @@ class WarningOverlay(private val context: Context) {
     private val density = context.resources.displayMetrics.density
     private var shown: FrameLayout? = null
     private var audioPlayer: OverlaySpeech? = null
+    // 오버레이는 Compose 바깥의 TextView이므로 글자 확대 설정을 별도로 적용합니다.
+    private fun uiFontScale(): Float {
+        val prefs = context.getSharedPreferences("ansim_settings", Context.MODE_PRIVATE)
+        val mode = prefs.getString("notification_type", "기본 알림")
+        val role = prefs.getString("role", "protected")
+        return if (usesLargeText(mode, role)) BIG_TEXT_FONT_MULTIPLIER else 1f
+    }
     private val checkingOverlay = CheckingOverlay(context)
     private fun dp(value: Int) = (value * density + 0.5f).toInt()
     private fun shape(color: Int, radius: Int): GradientDrawable = GradientDrawable().apply {
@@ -34,7 +43,7 @@ class WarningOverlay(private val context: Context) {
     }
     private fun text(label: String, size: Float, color: Int, bold: Boolean = false): TextView =
         TextView(context).apply {
-            this.text = label; textSize = size; setTextColor(color)
+            this.text = label; textSize = size * uiFontScale(); setTextColor(color)
             if (bold) setTypeface(null, Typeface.BOLD)
         }
 
@@ -122,7 +131,7 @@ class WarningOverlay(private val context: Context) {
                 isClickable = true; isFocusable = true; contentDescription = label
                 setOnClickListener { clicked() }
             }
-            buttons.addView(button, LinearLayout.LayoutParams(0, dp(43), 1f).apply {
+            buttons.addView(button, LinearLayout.LayoutParams(0, dp(if (uiFontScale() > 1f) 52 else 43), 1f).apply {
                 rightMargin = if (primary) dp(6) else 0
                 leftMargin = if (primary) 0 else dp(6)
             })

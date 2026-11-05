@@ -62,7 +62,8 @@ fun NotificationSettingsScreen(currentType: String, currentLanguage: String,
             Text("알림 방식", color = AnsimMuted, fontWeight = FontWeight.Bold, fontSize = 13.sp)
             Spacer(Modifier.height(5.dp))
             choices.forEach { (value, label) ->
-                Row(Modifier.fillMaxWidth().height(48.dp).clickable { draftType = value },
+                Row(Modifier.fillMaxWidth().heightIn(min = 54.dp)
+                    .clickable { draftType = value }.padding(vertical = 6.dp),
                     verticalAlignment = Alignment.CenterVertically) {
                     Text(label, Modifier.weight(1f), color = AnsimInk, fontSize = 15.sp,
                         fontWeight = if (draftType == value) FontWeight.Bold else FontWeight.Medium)
@@ -71,6 +72,13 @@ fun NotificationSettingsScreen(currentType: String, currentLanguage: String,
                 }
                 HorizontalDivider(color = Color(0xFFEEF0F3))
             }
+            Spacer(Modifier.height(12.dp))
+            Text(
+                if (draftType == "기본 알림") "이 방식을 저장하면 앱 글씨가 자동으로 커져요."
+                else "이 방식은 기본 글씨 크기로 표시돼요.",
+                color = AnsimMuted, fontSize = 13.sp, lineHeight = 19.sp
+            )
+            HorizontalDivider(color = Color(0xFFEEF0F3))
             Spacer(Modifier.height(18.dp))
             // 기본 정보 제목을 연속 5번 누르면 이 화면에만 개발 도구가 나타납니다.
             Text("기본 정보", color = AnsimMuted, fontWeight = FontWeight.Bold, fontSize = 13.sp,
@@ -113,10 +121,11 @@ private fun SettingsDetailRow(
     title: String, value: String, onClick: () -> Unit,
     valueColor: Color = AnsimMuted
 ) {
-    Row(Modifier.fillMaxWidth().height(51.dp).clickable(onClick = onClick),
-        verticalAlignment = Alignment.CenterVertically) {
+    Row(Modifier.fillMaxWidth().heightIn(min = 51.dp).clickable(onClick = onClick)
+        .padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
         Text(title, Modifier.weight(1f), color = AnsimInk, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-        Text(value, color = valueColor, fontSize = 13.sp)
+        Text(value, modifier = Modifier.widthIn(max = 168.dp), color = valueColor,
+            fontSize = 13.sp, textAlign = androidx.compose.ui.text.style.TextAlign.End)
         Spacer(Modifier.width(8.dp))
         Text("›", color = AnsimMuted, fontSize = 22.sp)
     }

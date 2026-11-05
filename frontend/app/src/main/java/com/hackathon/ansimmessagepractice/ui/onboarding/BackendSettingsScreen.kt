@@ -1,6 +1,8 @@
 package com.hackathon.ansimmessagepractice.ui.onboarding
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -26,7 +28,8 @@ fun BackendSettingsScreen(onBack: () -> Unit) {
     var running by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     Column(Modifier.fillMaxSize().background(Color.White).statusBarsPadding().navigationBarsPadding()
-        .padding(22.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        .verticalScroll(rememberScrollState()).padding(22.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)) {
         TextButton(onClick = onBack) { Text("‹  설정으로", color = AnsimInk) }
         Text("개발자 도구 · 서버 연결", fontSize = 25.sp, fontWeight = FontWeight.Bold, color = AnsimInk)
         Text("서버 주소는 data/api/BackendApi.kt의 BackendConfig.SERVER_URL에서 설정해요.",
@@ -53,7 +56,7 @@ fun BackendSettingsScreen(onBack: () -> Unit) {
             Text(if (running) "확인 중..." else "연결 테스트 (/health + 사용자 등록)")
         }
         Text(status, fontSize = 14.sp, color = AnsimInk)
-        Spacer(Modifier.weight(1f))
+        Spacer(Modifier.height(12.dp))
         Text("개발용 진단 화면입니다. 운영 환경에서는 HTTPS와 사용자 인증이 필요합니다.",
             fontSize = 12.sp, color = AnsimMuted)
     }

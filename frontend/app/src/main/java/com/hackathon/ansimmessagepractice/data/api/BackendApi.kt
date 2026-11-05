@@ -8,6 +8,8 @@ import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
+import java.net.Proxy
+import android.util.Log
 
 /**
  * 서버 주소는 앱 코드에서 한 곳만 수정합니다.
@@ -15,7 +17,7 @@ import java.net.URL
  * 예: "https://your-api.example.com" (마지막 '/' 없이)
  */
 object BackendConfig {
-    private const val SERVER_URL = "" // TODO: 백엔드 팀의 HTTPS 서버 주소 입력
+    private const val SERVER_URL = "https://woven-cardboard-filing.ngrok-free.dev" // TODO: 백엔드 팀의 HTTPS 서버 주소 입력
 
     // 기존 호출부와 호환하도록 Context 인자를 유지합니다.
     fun get(context: Context): String = SERVER_URL.trim().trimEnd('/')
@@ -32,7 +34,12 @@ object BackendApi {
             val base = BackendConfig.get(context)
             require(base.isNotBlank()) { "서버 주소가 아직 설정되지 않았어요." }
             require(path.startsWith("/") && !path.startsWith("//")) { "올바르지 않은 API 경로" }
-            val conn = (URL(base + path).openConnection() as HttpURLConnection)
+            Log.d("BackendDebug", "요청 URL: ${base + path}")
+
+            val conn = (
+                    URL(base + path)
+                        .openConnection(Proxy.NO_PROXY) as HttpURLConnection
+                    )
             try {
                 conn.requestMethod = method
                 conn.connectTimeout = 12_000

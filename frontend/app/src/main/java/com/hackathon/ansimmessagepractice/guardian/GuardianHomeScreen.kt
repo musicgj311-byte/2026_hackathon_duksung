@@ -10,6 +10,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -50,7 +51,7 @@ fun GuardianHomeScreen(onInputCode: () -> Unit, onManualCall: () -> Unit,
         notificationLoading = true
         runCatching { GuardianApi.notifications(context) }
             .onSuccess { notificationRecords = it; notificationLoadError = "" }
-            .onFailure { notificationLoadError = "서버 알림 이력을 불러오지 못했어요." }
+            .onFailure { notificationLoadError = "가족 알림을 불러오지 못했어요. 새로고침을 눌러 다시 확인해 주세요." }
         notificationLoading = false
     }
     if (confirmDisconnect) AlertDialog(
@@ -97,7 +98,7 @@ fun GuardianHomeScreen(onInputCode: () -> Unit, onManualCall: () -> Unit,
             Box {
                 TextButton(onClick = { menuExpanded = true }) { Text("설정", color = AnsimInk) }
                 DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
-                    DropdownMenuItem(text = { Text("알림 설정") }, onClick = {
+                    DropdownMenuItem(text = { Text("알림 권한 확인") }, onClick = {
                         menuExpanded = false; onNotificationSettings()
                     })
                     if (showDeveloperTools) {
@@ -121,7 +122,7 @@ fun GuardianHomeScreen(onInputCode: () -> Unit, onManualCall: () -> Unit,
                     Text(if (confirmed) "✓ 가족과 연결되었어요" else "아직 연결된 가족이 없어요",
                         color = if (confirmed) AnsimProtected else AnsimCaution,
                         fontSize = 19.sp, fontWeight = FontWeight.ExtraBold)
-                    Text(if (confirmed) "연결 코드를 확인했어요. 실제 알림 수신은 푸시 연동 후 가능해요."
+                    Text(if (confirmed) "가족 연결이 확인됐어요. 알림 수신은 휴대폰의 알림 설정에 따라 달라질 수 있어요."
                     else "보호받는 가족에게 6자리 코드를 받아 입력해 주세요.",
                         color = AnsimMuted, fontSize = 14.sp, lineHeight = 21.sp)
                     if (confirmed) Text("연결 상태는 마지막 서버 연결 결과를 기준으로 표시돼요.",
@@ -144,20 +145,35 @@ fun GuardianHomeScreen(onInputCode: () -> Unit, onManualCall: () -> Unit,
                     } else if (notificationLoadError.isNotBlank()) {
                         Text(notificationLoadError, color = AnsimCaution, fontSize = 13.sp)
                     } else if (notificationRecords.isEmpty()) {
-                        Text("서버에 기록된 가족 알림이 없어요.", color = AnsimMuted, fontSize = 13.sp)
+                        Text("아직 확인할 가족 알림이 없어요.", color = AnsimMuted, fontSize = 13.sp)
                     } else {
                         notificationRecords.take(5).forEach { record ->
+                            val isDanger = record.level.equals("danger", ignoreCase = true)
+                            val isCaution = record.level.equals("caution", ignoreCase = true)
+                            val levelColor = if (isDanger) AnsimDanger else if (isCaution) AnsimCaution else AnsimMuted
+                            val badgeBackground = if (isDanger) Color(0xFFFDE8EB)
+                            else if (isCaution) Color(0xFFFFF1D9) else AnsimCream
                             Column(Modifier.fillMaxWidth().clickable { onAlertClick(record) }
-                                .padding(vertical = 9.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                                Text("${if (record.level == "danger") "위험" else "주의"} · ${guardianScamTypeName(record.scamType)}",
-                                    color = AnsimInk, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-                                Text("알림 전송 시각: ${formatGuardianEventTime(record.sentAt)} · 상세 보기 ›",
-                                    color = AnsimMuted, fontSize = 12.sp)
+                                .padding(vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
+                                Row(verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+                                    Surface(color = badgeBackground, shape = RoundedCornerShape(6.dp)) {
+                                        Text(if (isDanger) "⚠ 위험" else if (isCaution) "주의" else "확인 필요",
+                                            modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp),
+                                            color = levelColor, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold)
+                                    }
+                                    Text(guardianScamTypeName(record.scamType),
+                                        modifier = Modifier.weight(1f), color = AnsimInk,
+                                        fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                    Text("›", color = AnsimMuted, fontSize = 20.sp)
+                                }
+                                Text("${formatGuardianEventTime(record.sentAt)} · 내용 확인하기",
+                                    color = AnsimMuted, fontSize = 13.sp)
                             }
                             HorizontalDivider(color = AnsimCream)
                         }
                     }
-                    Text("이는 서버의 FCM 전송 기록이며, 휴대폰 수신 성공을 보장하지 않아요.",
+                    Text("알림을 보낸 기록이에요. 가족 휴대폰에 실제 도착했는지는 확인되지 않아요.",
                         color = AnsimMuted, fontSize = 12.sp)
                 }
             }
