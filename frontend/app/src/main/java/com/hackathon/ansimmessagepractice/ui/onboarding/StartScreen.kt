@@ -1,42 +1,56 @@
 package com.hackathon.ansimmessagepractice.ui.onboarding
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.em
 import com.hackathon.ansimmessagepractice.ui.theme.*
 
-/** 상단 소개·세 가지 핵심 설명·하단 시작 버튼. */
+/**
+ * 최종 시안 1p. 배경의 두 링은 중심이 서로 다릅니다(시안 측정값, 390dp 폭 기준).
+ *  - 바깥 링: 중심 (244, 386), 반지름 238, 두께 56, 흰색 7%
+ *  - 안쪽 링: 중심 (260, 370), 반지름 150, 두께 41, 흰색 9%
+ */
 @Composable
 fun StartScreen(name: String, modifier: Modifier = Modifier, onStartClick: () -> Unit) {
-    Column(modifier.fillMaxSize().background(Color.White).statusBarsPadding().navigationBarsPadding()
-        .padding(horizontal = 25.dp, vertical = 22.dp)) {
-        AnsimBrandMark(size = 48.dp)
-        Spacer(Modifier.height(18.dp))
-        Text("문자 사기,\n먼저 확인해 드려요", fontSize = 29.sp, lineHeight = 37.sp,
-            color = AnsimInk, fontWeight = FontWeight.ExtraBold)
-        Spacer(Modifier.height(7.dp))
-        Text("직접 의심하거나 확인하지 않아도 됩니다.", color = AnsimMuted, fontSize = 15.sp)
-        Spacer(Modifier.height(25.dp))
-        listOf(
-            "▢" to "문자가 오면 자동으로 확인해요",
-            "⚠" to "위험하면 쉬운 말로 알려드려요",
-            "♧" to "가족에게도 함께 알려요"
-        ).forEach { (icon, label) ->
-            Row(Modifier.fillMaxWidth().height(55.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text(icon, color = AnsimGreen, fontSize = 21.sp, modifier = Modifier.width(42.dp))
-                Text(label, color = AnsimInk, fontSize = 15.sp, fontWeight = FontWeight.Medium)
-            }
-            androidx.compose.material3.HorizontalDivider(color = Color(0xFFF0F1F3))
+    StatusBarIcons(light = true)
+    Box(modifier.fillMaxSize().background(AnsimBlue).statusBarsPadding().navigationBarsPadding()) {
+        Canvas(Modifier.fillMaxSize()) {
+            val k = size.width / 390.dp.toPx() * 1.dp.toPx()
+            drawCircle(Color.White.copy(alpha = .07f), radius = 238f * k, center = Offset(244f * k, 386f * k),
+                style = Stroke(width = 56f * k))
+            drawCircle(Color.White.copy(alpha = .09f), radius = 150f * k, center = Offset(260f * k, 370f * k),
+                style = Stroke(width = 41f * k))
         }
-        Spacer(Modifier.weight(1f))
-        AnsimPrimaryButton("시작하기", onStartClick)
+        Column(Modifier.fillMaxSize().padding(start = 24.dp, end = 24.dp, top = 64.dp, bottom = 32.dp)) {
+            AnsimBrandMark(size = 56.dp, inverse = true)
+            Spacer(Modifier.weight(1f))
+            Text("의심하지\n않아도\n괜찮아요.", color = Color.White,
+                style = ansimStyle(52, 58.2, FontWeight.ExtraBold).copy(letterSpacing = (-0.02).em))
+            Spacer(Modifier.height(20.dp))
+            Text("사기 문자는 안심문자가 먼저 보고,\n위험하면 가족에게도 알려요.",
+                color = Color.White.copy(alpha = .92f), style = ansimStyle(19, 29.5))
+            Spacer(Modifier.height(30.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                listOf("자동 확인", "쉬운 경고", "가족 알림").forEach { label ->
+                    Box(Modifier.heightIn(min = 32.dp).background(Color.White.copy(alpha = .12f), CircleShape)
+                        .padding(horizontal = 14.dp), contentAlignment = androidx.compose.ui.Alignment.Center) {
+                        Text(label, color = Color.White, style = ansimStyle(15, 20, FontWeight.Bold))
+                    }
+                }
+            }
+            Spacer(Modifier.height(34.dp))
+            AnsimPrimaryButton("시작하기", onStartClick, container = Color.White, contentColor = AnsimBlue,
+                height = 64.dp, textStyle = ansimStyle(19, 26, FontWeight.Bold))
+        }
     }
 }

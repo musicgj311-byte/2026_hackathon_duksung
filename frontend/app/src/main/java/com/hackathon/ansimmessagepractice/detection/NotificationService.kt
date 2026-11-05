@@ -101,7 +101,12 @@ class NotificationService : NotificationListenerService() {
                     .onFailure {
                         Log.w("AnsimNotification", "판정 API 오류 (${it.javaClass.simpleName})")
                         overlay?.dismissChecking()
-                        WarningNotification.notify(applicationContext, "timeout", source)
+                        // 휴대폰을 쓰는 중이면 '확인 지연' 카드를 바로 띄우고(알림 방식별 소리·진동 포함),
+                        // 잠금 상태이거나 카드 표시에 실패하면 알림으로 대신합니다.
+                        val shown = canOverlayNow() &&
+                                (overlay ?: WarningOverlay(applicationContext).also { overlay = it })
+                                    .show("timeout", sourceApp = source)
+                        if (!shown) WarningNotification.notify(applicationContext, "timeout", source)
                     }
             }
         }

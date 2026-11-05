@@ -13,6 +13,9 @@ import com.hackathon.ansimmessagepractice.data.api.BackendConfig
 import com.hackathon.ansimmessagepractice.data.api.GuardianNotificationRecord
 import com.hackathon.ansimmessagepractice.data.api.UserSync
 import com.hackathon.ansimmessagepractice.guardian.PairingIntegration
+import com.hackathon.ansimmessagepractice.guardian.DemoPairing
+import com.hackathon.ansimmessagepractice.guardian.DemoGuardianApprovalScreen
+import com.hackathon.ansimmessagepractice.guardian.DemoGuardianWaitingScreen
 import com.hackathon.ansimmessagepractice.detection.AlertRecord
 import com.hackathon.ansimmessagepractice.guardian.GuardianAlertScreen
 import com.hackathon.ansimmessagepractice.guardian.GuardianScreen
@@ -60,9 +63,13 @@ fun AnsimApp(
     var selectedAlert by remember { mutableStateOf<AlertRecord?>(null) }
     var selectedGuardianAlert by remember { mutableStateOf<GuardianNotificationRecord?>(null) }
     var guardianFromHome by remember { mutableStateOf(false) }
+    // 홈·보호자 관리·경고 화면에서 연결 코드 화면(7p)을 연 경우 온보딩이 아닌 홈으로 돌아갑니다.
+    var protectedPairFromHome by remember { mutableStateOf(false) }
+    fun openProtectedPairFromHome() { protectedPairFromHome = true; currentScreen = "protected_pair" }
     var manualReturnTo by remember { mutableStateOf("home") }
     var permissionsReturnTo by remember { mutableStateOf("home") }
     var backendReturnTo by remember { mutableStateOf("settings") }
+    var guardianPreviewReturnTo by remember { mutableStateOf("home") }
     val warningOverlay = remember(context) { WarningOverlay(context.applicationContext) }
     val previewScope = rememberCoroutineScope()
     var previewSerial by remember { mutableIntStateOf(0) }
@@ -95,8 +102,8 @@ fun AnsimApp(
             .putString("language_code", localizedCode(selectedLanguage))
             .putString("role", currentRole)
             .putBoolean("role_selected", true)
-            .putBoolean("needs_server_sync", true).apply()
-        if (BackendConfig.isConfigured(context)) previewScope.launch {
+            .putBoolean("needs_server_sync", !DemoPairing.enabled(context)).apply()
+        if (!DemoPairing.enabled(context) && BackendConfig.isConfigured(context)) previewScope.launch {
             runCatching { UserSync.ensureCurrent(context, currentRole) }
                 .onFailure { Toast.makeText(context, "서버 사용자 등록 실패: ${it.message}", Toast.LENGTH_LONG).show() }
         }
@@ -111,20 +118,19 @@ fun AnsimApp(
         currentRole = nextRole
         guardianPairFromHome = false
         guardianNotifyFromHome = false
-        if (!changingRole) {
-            prefs.edit()
-                .putString("role", nextRole)
-                .putBoolean("role_selected", true)
-                .putBoolean("onboarded", alreadyOnboardedForRole)
-                .apply()
-        }
+        // 연결 API 및 설치 ID는 SharedPreferences의 role을 읽습니다.
+        // 역할 변경 중에도 선택 즉시 저장해야 잘못된 기기 ID로 요청하지 않습니다.
+        prefs.edit()
+            .putString("role", nextRole)
+            .putBoolean("role_selected", true)
+            .putBoolean("onboarded", alreadyOnboardedForRole)
+            .apply()
         currentScreen = if (alreadyOnboardedForRole) {
             if (nextRole == "guardian") "guardian_home" else "home"
         } else if (nextRole == "guardian") {
-            "guardian_notify"
+            "guardian_pair"
         } else {
-            // 보호 대상자는 권한 설정을 첫 온보딩 단계로 표시합니다.
-            "permission"
+            "select"
         }
     }
     fun requestRoleChange() {
@@ -133,14 +139,19 @@ fun AnsimApp(
     }
     val previous = when (currentScreen) {
         "role_select" -> if (changingRole) (if (prefs.getString("role", "protected") == "guardian") "guardian_home" else "home") else "start"
-        "select" -> "permission"
+        "select" -> "role_select"
         "guardian_notify" -> if (guardianNotifyFromHome) "guardian_home" else "role_select"
-        "guardian_pair" -> if (guardianPairFromHome) "guardian_home" else "guardian_notify"
+        "guardian_pair" -> if (guardianPairFromHome) "guardian_home" else "role_select"
         "language" -> "select"
-        "permission" -> "role_select"
+        "permission" -> "language"
+        "protected_pair" -> if (protectedPairFromHome) "home" else "permission"
+        "demo_approval" -> if (currentRole == "guardian") "demo_guardian_wait" else "protected_pair"
+        "demo_guardian_wait" -> "guardian_pair"
+        "guardian_connected_success" -> "guardian_home"
         "guardian" -> if (guardianFromHome) "guardian_manage" else "language"
         "guardian_manage" -> "home"
-        "settings", "guardian_preview", "alert_detail" -> "home"
+        "settings", "alert_detail" -> "home"
+        "guardian_preview" -> guardianPreviewReturnTo
         "guardian_alert_detail" -> "guardian_home"
         "permissions_settings" -> permissionsReturnTo
         "backend_settings" -> backendReturnTo
@@ -159,8 +170,8 @@ fun AnsimApp(
     // 선택한 알림 방식이 '기본 알림'(큰 글씨와 소리)일 때만 전체 Compose 화면의 글꼴을 확대합니다.
     // 보호자 모드와 나머지 알림 방식은 시스템 글꼴 크기를 그대로 따릅니다.
     val systemDensity = LocalDensity.current
-    val scaledDensity = remember(systemDensity, largeTextEnabled) {
-        Density(systemDensity.density, systemDensity.fontScale * if (largeTextEnabled) BIG_TEXT_FONT_MULTIPLIER else 1f)
+    val scaledDensity = remember(systemDensity, largeTextEnabled, selectedType, currentRole) {
+        Density(systemDensity.density, systemDensity.fontScale * largeTextScale(selectedType, currentRole))
     }
     CompositionLocalProvider(LocalDensity provides scaledDensity) {
         when (currentScreen) {
@@ -168,13 +179,13 @@ fun AnsimApp(
                 currentRole = prefs.getString("role", "protected") ?: "protected"
                 currentScreen = when {
                     // 첫 설치: 역할을 선택한 다음 해당 역할의 권한을 안내합니다.
-                    !prefs.getBoolean("role_selected", false) -> "role_select"
+                    !prefs.getBoolean("role_selected", false) -> "start"
                     // 온보딩 완료 후 실행: 권한 안내 반복 없이 홈으로 이동합니다.
                     prefs.getBoolean("onboarded", false) ->
                         if (currentRole == "guardian") "guardian_home" else "home"
                     // 온보딩 중 종료: 보호 대상자는 권한 단계부터 다시 시작합니다.
-                    currentRole == "guardian" -> "guardian_notify"
-                    else -> "permission"
+                    currentRole == "guardian" -> "guardian_pair"
+                    else -> "select"
                 }
             }
             "start" -> StartScreen(name = "Android", onStartClick = { currentScreen = "role_select" })
@@ -198,9 +209,25 @@ fun AnsimApp(
                 onBack = { currentScreen = if (guardianNotifyFromHome) "guardian_home" else "role_select" }
             )
             "guardian_pair" -> GuardianCodeInputScreen(
-                onBack = { currentScreen = if (guardianPairFromHome) "guardian_home" else "guardian_notify" },
-                onConnected = { finishSetup() },
+                showLater = !guardianPairFromHome,
+                onBack = { currentScreen = if (guardianPairFromHome) "guardian_home" else "role_select" },
+                onConnected = {
+                    if (guardianPairFromHome) currentScreen = "guardian_home"
+                    else currentScreen = "guardian_connected_success"
+                },
+                onLater = { if (guardianPairFromHome) currentScreen = "guardian_home" else finishSetup() },
+                onDemoRequest = { currentScreen = "demo_guardian_wait" }
+            )
+            "demo_guardian_wait" -> DemoGuardianWaitingScreen(
+                onShowApproval = { currentScreen = "demo_approval" },
                 onLater = { if (guardianPairFromHome) currentScreen = "guardian_home" else finishSetup() }
+            )
+            "demo_approval" -> DemoGuardianApprovalScreen(
+                onApprove = {
+                    DemoPairing.approve(context)
+                    currentScreen = "guardian_connected_success"
+                },
+                onReject = { currentScreen = if (currentRole == "guardian") "demo_guardian_wait" else "protected_pair" }
             )
             "guardian_home" -> GuardianHomeScreen(
                 onInputCode = { guardianPairFromHome = true; currentScreen = "guardian_pair" },
@@ -208,17 +235,27 @@ fun AnsimApp(
                 onBackendSettings = { backendReturnTo = "guardian_home"; currentScreen = "backend_settings" },
                 onManualCall = { manualReturnTo = "guardian_home"; currentScreen = "manual_call" },
                 onChangeRole = { requestRoleChange() },
-                onAlertClick = { record -> selectedGuardianAlert = record; currentScreen = "guardian_alert_detail" }
+                onAlertClick = { record -> selectedGuardianAlert = record; currentScreen = "guardian_alert_detail" },
+                onDemoAlertClick = { guardianPreviewReturnTo = "guardian_home"; currentScreen = "guardian_preview" }
             )
             "permission" -> PermissionScreen(
-                onNextClick = { currentScreen = "select" },
-                onBackClick = { currentScreen = "role_select" },
-                onSkipClick = { currentScreen = "select" }
+                onNextClick = { protectedPairFromHome = false; currentScreen = "protected_pair" },
+                onBackClick = { currentScreen = "language" },
+                onSkipClick = { protectedPairFromHome = false; currentScreen = "protected_pair" }
+            )
+            "protected_pair" -> com.hackathon.ansimmessagepractice.guardian.ProtectedPairingScreen(
+                onBack = { currentScreen = if (protectedPairFromHome) "home" else "permission" },
+                onLater = { if (protectedPairFromHome) currentScreen = "home" else finishSetup() },
+                onDemoApproval = { currentScreen = "demo_approval" }
+            )
+            "guardian_connected_success" -> com.hackathon.ansimmessagepractice.guardian.GuardianConnectedScreen(
+                onHome = { finishSetup() },
+                demo = DemoPairing.enabled(context)
             )
             "select" -> UserTypeScreen(selectedType, { selectedType = it },
-                onNextClick = { currentScreen = "language" }, onBackClick = { currentScreen = "permission" })
+                onNextClick = { currentScreen = "language" }, onBackClick = { currentScreen = "role_select" })
             "language" -> LanguageScreen(selectedLanguage, { selectedLanguage = it },
-                onNextClick = { guardianFromHome = false; currentScreen = "guardian" },
+                onNextClick = { currentScreen = "permission" },
                 onBackClick = { currentScreen = "select" })
             "backend_settings" -> BackendSettingsScreen(onBack = { currentScreen = backendReturnTo })
             "permissions_settings" -> PermissionScreen(
@@ -232,15 +269,26 @@ fun AnsimApp(
             )
             "guardian_manage" -> GuardianManageScreen(
                 onBack = { currentScreen = "home" },
-                onEdit = { guardianFromHome = true; currentScreen = "guardian" }
+                // 시연 모드에서는 '보호자 변경/등록'이 새 연결 코드(7p)를 받는 흐름입니다.
+                onEdit = {
+                    if (DemoPairing.enabled(context)) openProtectedPairFromHome()
+                    else { guardianFromHome = true; currentScreen = "guardian" }
+                }
             )
             "home" -> HomeScreen(
                 selectedType = selectedType, selectedLanguage = selectedLanguage,
                 onTestWarningClick = { selectedRisk -> risk = selectedRisk; activeWarning = null; currentScreen = "warning" },
                 onSettingsClick = { currentScreen = "settings" },
                 onPermissionClick = { permissionsReturnTo = "home"; currentScreen = "permissions_settings" },
-                onGuardianManageClick = { guardianFromHome = true; currentScreen = "guardian_manage" },
-                onGuardianPreviewClick = { currentScreen = "guardian_preview" },
+                // 연결된 보호자가 있으면 '관리'(15p), 시연 모드에서 아직 없으면 연결 코드(7p)로 갑니다.
+                onGuardianManageClick = {
+                    if (DemoPairing.enabled(context) && !DemoPairing.approved(context) &&
+                        !com.hackathon.ansimmessagepractice.guardian.GuardianCall.validNumber(
+                            com.hackathon.ansimmessagepractice.guardian.GuardianCall.savedNumber(context))) openProtectedPairFromHome()
+                    else { guardianFromHome = true; currentScreen = "guardian_manage" }
+                },
+                onManualCallClick = { manualReturnTo = "home"; currentScreen = "manual_call" },
+                onGuardianPreviewClick = { guardianPreviewReturnTo = "home"; currentScreen = "guardian_preview" },
                 onAlertDetailClick = { level -> selectedAlert = null; alertDetailLevel = level; currentScreen = "alert_detail" },
                 onRecentAlertClick = { alert -> selectedAlert = alert; alertDetailLevel = alert.level; currentScreen = "alert_detail" },
                 onTestOverlayClick = { selectedRisk ->
@@ -261,7 +309,7 @@ fun AnsimApp(
                 }
             )
             "guardian_preview" -> GuardianAlertScreen(
-                onBackClick = { currentScreen = "home" },
+                onBackClick = { currentScreen = guardianPreviewReturnTo },
                 onManualNumberClick = { manualReturnTo = "guardian_preview"; currentScreen = "manual_call" }
             )
             "guardian_alert_detail" -> GuardianAlertScreen(
@@ -286,8 +334,8 @@ fun AnsimApp(
                         .putString("language", language)
                         .putString("user_type_code", userTypeCode(type))
                         .putString("language_code", localizedCode(language))
-                        .putBoolean("needs_server_sync", true).apply()
-                    if (BackendConfig.isConfigured(context)) previewScope.launch {
+                        .putBoolean("needs_server_sync", !DemoPairing.enabled(context)).apply()
+                    if (!DemoPairing.enabled(context) && BackendConfig.isConfigured(context)) previewScope.launch {
                         runCatching { UserSync.ensureCurrent(context, "protected") }
                             .onFailure { Toast.makeText(context, "설정 서버 동기화 실패: ${it.message}", Toast.LENGTH_LONG).show() }
                     }
@@ -319,7 +367,10 @@ fun AnsimApp(
                     onCloseClick = { activeWarning = null; currentScreen = if (currentRole == "guardian") "guardian_home" else "home" },
                     payload = warningData,
                     onManualNumberClick = { manualReturnTo = "warning"; currentScreen = "manual_call" },
-                    onRegisterGuardianClick = { guardianFromHome = true; currentScreen = "guardian_manage" },
+                    onRegisterGuardianClick = {
+                        if (DemoPairing.enabled(context)) openProtectedPairFromHome()
+                        else { guardianFromHome = true; currentScreen = "guardian_manage" }
+                    },
                     onRetryClick = {
                         Toast.makeText(context, "판정 서버 연결 후 다시 확인할 수 있어요.", Toast.LENGTH_LONG).show()
                     }

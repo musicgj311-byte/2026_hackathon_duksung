@@ -2,6 +2,7 @@ package com.hackathon.ansimmessagepractice.guardian
 
 import android.content.Context
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
@@ -39,13 +40,16 @@ fun GuardianScreen(onSkipClick: () -> Unit, onBackClick: () -> Unit, fromHome: B
     Column(Modifier.fillMaxSize().background(Color.White).statusBarsPadding().navigationBarsPadding()
         .padding(horizontal = 25.dp, vertical = 17.dp)) {
         if (!fromHome) OnboardingStepHeader(4, { if (stage > 0) stage-- else onBackClick() })
-        else TextButton(onClick = { if (stage > 0) stage-- else onBackClick() }) {
-            Text("‹  보호자 관리", color = AnsimInk, fontSize = 17.sp)
+        else Row(Modifier.clickable { if (stage > 0) stage-- else onBackClick() }.padding(vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically) {
+            AnsimIcon(AnsimIcons.ChevronLeft, AnsimInk, 22.dp)
+            Spacer(Modifier.width(8.dp))
+            Text("보호자 관리", style = AnsimType.TopBar, color = AnsimInk)
         }
         Spacer(Modifier.height(23.dp))
         when (stage) {
             0 -> {
-                Text("보호자 정보를 입력해 주세요", fontSize = 28.sp, lineHeight = 36.sp,
+                Text("보호자 정보를 입력해 주세요", style = AnsimType.Title,
                     fontWeight = FontWeight.ExtraBold, color = AnsimInk)
                 Spacer(Modifier.height(8.dp))
                 Text("위험할 때 바로 전화할 수 있도록 믿을 수 있는 가족 번호를 등록해요.",
@@ -79,7 +83,7 @@ fun GuardianScreen(onSkipClick: () -> Unit, onBackClick: () -> Unit, fromHome: B
             }
             1 -> {
                 Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
-                    Text("보호자 정보를 확인해 주세요", fontSize = 28.sp, lineHeight = 36.sp,
+                    Text("보호자 정보를 확인해 주세요", style = AnsimType.Title,
                         fontWeight = FontWeight.ExtraBold, color = AnsimInk)
                     Spacer(Modifier.height(24.dp))
                     HorizontalDivider(color = AnsimInk)
@@ -105,15 +109,15 @@ fun GuardianScreen(onSkipClick: () -> Unit, onBackClick: () -> Unit, fromHome: B
             }
             else -> {
                 Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
-                    Text("✓", color = AnsimProtected, fontSize = 48.sp, fontWeight = FontWeight.Bold)
+                    AnsimIcon(AnsimIcons.CircleCheck, AnsimProtected, 44.dp)
                     Spacer(Modifier.height(12.dp))
                     Text("${name.trim()} 님의 전화번호를 저장했어요", color = AnsimInk,
-                        fontSize = 28.sp, lineHeight = 36.sp, fontWeight = FontWeight.ExtraBold)
+                        style = AnsimType.Title, fontWeight = FontWeight.ExtraBold)
                     Spacer(Modifier.height(23.dp))
                     HorizontalDivider(color = Color(0xFFEDF0F2))
-                    GuardianSuccessRow("☎", "경고 화면에서 버튼 하나로 전화할 수 있어요")
-                    GuardianSuccessRow("⚠", "서버 연결이 완료되기 전에는 보호자 알림이 전송되지 않아요")
-                    GuardianSuccessRow("▣", "받은 문자 원문은 보호자에게 전송하지 않아요")
+                    GuardianSuccessRow(AnsimIcons.Phone, "경고 화면에서 버튼 하나로 전화할 수 있어요")
+                    GuardianSuccessRow(AnsimIcons.Bell, "서버 연결이 완료되기 전에는 보호자 알림이 전송되지 않아요")
+                    GuardianSuccessRow(AnsimIcons.Lock, "받은 문자 원문은 보호자에게 전송하지 않아요")
                 }
                 Spacer(Modifier.height(12.dp))
                 AnsimPrimaryButton(if (fromHome) "보호자 관리로" else "홈으로", onSkipClick)
@@ -132,10 +136,11 @@ private fun GuardianInfoRow(label: String, value: String) {
 }
 
 @Composable
-private fun GuardianSuccessRow(symbol: String, content: String) {
-    Row(Modifier.fillMaxWidth().padding(vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
-        Text(symbol, modifier = Modifier.width(30.dp), color = AnsimGreen, fontSize = 20.sp)
-        Text(content, modifier = Modifier.weight(1f), fontSize = 14.sp, lineHeight = 20.sp, color = AnsimInk)
+private fun GuardianSuccessRow(icon: androidx.compose.ui.graphics.vector.ImageVector, content: String) {
+    Row(Modifier.fillMaxWidth().padding(vertical = 16.dp)) {
+        AnsimIcon(icon, AnsimBlue, 22.dp, Modifier.padding(top = 2.dp))
+        Spacer(Modifier.width(12.dp))
+        Text(content, modifier = Modifier.weight(1f), style = ansimStyle(17, 26.4), color = AnsimInk)
     }
     HorizontalDivider(color = Color(0xFFF0F1F3))
 }

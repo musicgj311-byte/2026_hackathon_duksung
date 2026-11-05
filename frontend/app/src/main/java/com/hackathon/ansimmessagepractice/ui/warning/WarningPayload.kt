@@ -23,9 +23,9 @@ object PreviewJudgeResults {
     fun forLevel(level: String, language: String = "ko"): WarningPayload {
         val base = when (level) {
             "caution" -> WarningPayload(
-                level = "caution", scamType = "delivery", title = "사기일 수 있어요.\n링크를 누르지 마세요.",
-                explanation = "처음 보는 인터넷 주소가 포함되어 있어요.",
-                action = "택배는 사용하는 택배 앱이나 송장번호로 직접 확인하세요.",
+                level = "caution", scamType = "delivery", title = "링크를\n누르지\n마세요.",
+                explanation = "처음 보는 인터넷 주소가 있어요.",
+                action = "택배는 쓰시는 택배 앱이나 송장번호로 직접 확인하세요.",
                 easySentence = "링크 누르지 마세요.", language = language,
                 sender = "1588-****", receivedMessage = "고객님 택배가 미수령 상태입니다. 재배송 신청 http://post-redeliver.example/k2"
             )
@@ -41,7 +41,7 @@ object PreviewJudgeResults {
                 easySentence = "먼저 확인하세요.", language = language
             )
             else -> WarningPayload(
-                level = "danger", scamType = "family_impersonation", title = "사기 문자예요.\n돈을 보내지 마세요.",
+                level = "danger", scamType = "family_impersonation", title = "돈을\n보내지\n마세요.",
                 explanation = "가족인 척 송금을 요구하고 있어요.",
                 action = "가족에게 원래 번호로 직접 전화해 확인하세요.",
                 easySentence = "돈 보내지 마세요.", language = language,
@@ -53,19 +53,22 @@ object PreviewJudgeResults {
         // 실제 동적 번역은 /judge 응답의 문구를 그대로 사용합니다.
         val translated = when (language) {
             "en" -> when (base.level) {
-                "danger" -> listOf("This looks like a scam", "This message may be trying to take your money or information.", "Do not tap the link or send money. Call someone you trust.", "Do not tap. Do not pay.")
-                "caution" -> listOf("Be careful", "This message has signs often used in scams.", "Before tapping or paying, call the sender directly to check.", "Check by phone first.")
-                else -> listOf("Checking your message", "Do not tap links or send money yet.", "Wait for the result.", "Wait and check.")
+                "danger" -> listOf("This is a scam message.\nDon't send money.", "They pretend to be family and ask you to send money.", "Call your family directly on the number you already know.", "Don't send money.")
+                "caution" -> listOf("This may be a scam.\nDon't tap the link.", "It has a web address you haven't seen before.", "Check your delivery only in your delivery app or with the tracking number.", "Don't tap the link.")
+                "timeout" -> listOf("We couldn't finish checking", "The network is unstable. We don't know yet if this message is safe.", "Until it's checked, don't tap links or send money.", "Check first.")
+                else -> listOf("Checking the message", "Don't tap links or send money until it's done.", "Wait for the result.", "Please wait.")
             }
             "vi" -> when (base.level) {
-                "danger" -> listOf("Đây là tin nhắn lừa đảo.\nĐừng chuyển tiền.", "Họ giả làm người thân để bảo bạn chuyển tiền.", "Gọi trực tiếp cho gia đình bằng số đã lưu để kiểm tra.", "Đừng chuyển tiền.")
-                "caution" -> listOf("Hãy cẩn thận", "Tin nhắn này có dấu hiệu thường gặp trong lừa đảo.", "Trước khi bấm hoặc chuyển tiền, hãy gọi điện kiểm tra trực tiếp.", "Gọi điện kiểm tra trước.")
-                else -> listOf("Đang kiểm tra", "Đừng nhấn liên kết hoặc chuyển tiền.", "Hãy chờ kết quả.", "Hãy chờ.")
+                "danger" -> listOf("Đây là tin nhắn lừa đảo.\nĐừng chuyển tiền.", "Họ giả làm người thân để bảo bạn chuyển tiền.", "Hãy gọi thẳng cho gia đình bằng số bạn đã biết.", "Đừng chuyển tiền.")
+                "caution" -> listOf("Có thể là lừa đảo.\nĐừng nhấn vào liên kết.", "Tin nhắn có địa chỉ web lạ.", "Hãy kiểm tra trong ứng dụng giao hàng hoặc bằng mã vận đơn.", "Đừng nhấn liên kết.")
+                "timeout" -> listOf("Chưa thể kiểm tra xong", "Kết nối mạng không ổn định. Chưa biết tin nhắn này có an toàn không.", "Trước khi kiểm tra xong, đừng nhấn liên kết hoặc chuyển tiền.", "Hãy kiểm tra trước.")
+                else -> listOf("Đang kiểm tra tin nhắn", "Đừng nhấn liên kết hoặc chuyển tiền cho đến khi xong.", "Hãy chờ kết quả.", "Hãy chờ.")
             }
             "zh" -> when (base.level) {
-                "danger" -> listOf("这可能是诈骗短信", "这条短信可能想骗取你的钱或个人信息。", "不要点击链接，也不要转账。请直接致电家人确认。", "不要转账。")
-                "caution" -> listOf("请小心", "这条短信有诈骗中常见的特征。", "点击或转账前，请先打电话直接确认。", "先打电话确认。")
-                else -> listOf("正在检查短信", "请先不要点击链接或转账。", "等待检查结果。", "请稍等。")
+                "danger" -> listOf("这是诈骗短信。\n不要转账。", "对方假装家人，要求你转账。", "请用你已知道的号码直接打给家人确认。", "不要转账。")
+                "caution" -> listOf("可能是诈骗。\n不要点击链接。", "短信里有陌生的网址。", "请在快递App里或用运单号直接查询。", "不要点击链接。")
+                "timeout" -> listOf("未能完成检查", "网络不稳定，暂时无法确定这条短信是否安全。", "确认之前，请不要点击链接或转账。", "请先确认。")
+                else -> listOf("正在检查短信", "检查完成前，请不要点击链接或转账。", "请等待结果。", "请稍等。")
             }
             else -> return base
         }

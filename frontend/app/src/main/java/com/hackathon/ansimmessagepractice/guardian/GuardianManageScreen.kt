@@ -5,21 +5,26 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.hackathon.ansimmessagepractice.ui.onboarding.AnsimBottomSheet
+import com.hackathon.ansimmessagepractice.ui.onboarding.AnsimOutlineButton
 import com.hackathon.ansimmessagepractice.ui.onboarding.AnsimPrimaryButton
+import com.hackathon.ansimmessagepractice.ui.onboarding.AnsimTopBar
 import com.hackathon.ansimmessagepractice.ui.theme.*
-import java.text.DateFormat
-import java.util.Date
+import java.util.Calendar
 
-/** 홈의 '관리' 화면. 로컬 번호 삭제를 실제 서버 연결 해제로 오인하지 않도록 구분. */
+/**
+ * 최종 시안 15p '보호자 관리' + 연결 해제 하단 시트.
+ * 시연 연결(DemoPairing)과 이 휴대폰에 저장한 전화번호를 구분해서 표시합니다.
+ * 저장한 번호만 있는 경우 '연결 해제'는 이 휴대폰의 번호만 지우며 서버 연결은 건드리지 않습니다.
+ */
 @Composable
 fun GuardianManageScreen(onBack: () -> Unit, onEdit: () -> Unit) {
     val context = LocalContext.current
@@ -28,65 +33,87 @@ fun GuardianManageScreen(onBack: () -> Unit, onEdit: () -> Unit) {
     var phone by remember { mutableStateOf(GuardianCall.savedNumber(context)) }
     var relation by remember { mutableStateOf(prefs.getString("guardian_relationship", "").orEmpty()) }
     var savedAt by remember { mutableLongStateOf(prefs.getLong("guardian_contact_saved_at", 0L)) }
+    var demoLinked by remember { mutableStateOf(DemoPairing.approved(context)) }
     var confirming by remember { mutableStateOf(false) }
     val hasPhone = GuardianCall.validNumber(phone)
+    val hasGuardian = hasPhone || demoLinked
 
-    if (confirming) AlertDialog(onDismissRequest = { confirming = false },
-        title = { Text("가족 연락처를 삭제할까요?") },
-        text = { Text("이 휴대폰에 저장된 전화번호만 지워져요. 서버의 보호자 연결까지 해제되지는 않으며, 이후 경고 화면에서 바로 전화할 수 없어요.") },
-        confirmButton = { TextButton(onClick = {
-            prefs.edit().remove("guardian_name").remove("guardian_phone")
-                .remove("guardian_relationship").remove("guardian_contact_saved_at").apply()
-            name = ""; phone = ""; relation = ""; savedAt = 0L; confirming = false
-        }) { Text("삭제", color = AnsimDanger) } },
-        dismissButton = { TextButton(onClick = { confirming = false }) { Text("취소") } })
+    val displayName = if (hasPhone) name.ifBlank { "가족" } + if (relation.isNotBlank()) " ($relation)" else ""
+    else DemoPairing.GUARDIAN_NAME
+    val displayPhone = if (hasPhone) formatGuardianPhone(phone) else DemoPairing.GUARDIAN_PHONE
+    val linkedAt = if (hasPhone) savedAt else DemoPairing.approvedAt(context)
 
-    Column(Modifier.fillMaxSize().background(Color.White).statusBarsPadding().navigationBarsPadding()
-        .padding(horizontal = 24.dp, vertical = 14.dp)) {
-        TextButton(onClick = onBack) { Text("‹  보호자 관리", fontSize = 18.sp, color = AnsimInk,
-            fontWeight = FontWeight.Bold) }
-        Spacer(Modifier.height(12.dp))
-        Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
-            if (hasPhone) {
-                HorizontalDivider(color = AnsimInk)
-                ContactInfo("이름", name.ifBlank { "가족" } + if (relation.isNotBlank()) " ($relation)" else "")
-                ContactInfo("전화번호", phone)
-                ContactInfo("등록일", if (savedAt > 0) DateFormat.getDateInstance(DateFormat.MEDIUM).format(Date(savedAt)) else "이전 등록")
-                Spacer(Modifier.height(20.dp))
-                Text("전화할 가족 연락처가 기기에 저장되어 있어요.", color = AnsimProtected, fontSize = 13.sp)
-            } else {
-                Text("등록된 보호자 연락처가 없어요", fontSize = 23.sp,
-                    fontWeight = FontWeight.ExtraBold, color = AnsimInk)
-                Spacer(Modifier.height(8.dp))
-                Text("등록하면 위험 경고 화면에서 안전하게 가족에게 전화할 수 있어요.",
-                    color = AnsimMuted, fontSize = 14.sp, lineHeight = 21.sp)
-            }
-            Spacer(Modifier.height(17.dp))
-            Surface(color = AnsimMint, shape = RoundedCornerShape(9.dp)) {
-                Text("보호자 자동 알림 연결은 별도의 서버 페어링이 필요해요. 이 화면은 기기에 저장한 연락처를 관리해요.",
-                    Modifier.fillMaxWidth().padding(13.dp), color = AnsimGreenDark, fontSize = 12.sp, lineHeight = 19.sp)
-            }
-            Spacer(Modifier.height(20.dp))
-            OutlinedButton(onClick = onEdit, modifier = Modifier.fillMaxWidth().heightIn(min = 51.dp),
-                shape = RoundedCornerShape(8.dp)) {
-                Text(if (hasPhone) "보호자 변경" else "보호자 등록", color = AnsimInk, fontWeight = FontWeight.Bold)
-            }
-            if (hasPhone) {
-                Spacer(Modifier.height(10.dp))
-                OutlinedButton(onClick = { confirming = true }, modifier = Modifier.fillMaxWidth().heightIn(min = 51.dp),
-                    shape = RoundedCornerShape(8.dp)) { Text("연락처 삭제", color = AnsimDanger) }
+    Box(Modifier.fillMaxSize()) {
+        Column(Modifier.fillMaxSize().background(Color.White).statusBarsPadding().navigationBarsPadding()) {
+            AnsimTopBar("보호자 관리", onBack)
+            Column(Modifier.weight(1f).verticalScroll(rememberScrollState())
+                .padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 24.dp)) {
+                if (hasGuardian) {
+                    HorizontalDivider(color = AnsimInk, thickness = 2.dp)
+                    ContactInfo("이름", displayName)
+                    ContactInfo("전화번호", displayPhone)
+                    ContactInfo(if (hasPhone) "등록일" else "연결일", formatKoreanDate(linkedAt))
+                    Spacer(Modifier.height(16.dp))
+                    AnsimOutlineButton("보호자 변경", onEdit, height = 52.dp)
+                    Spacer(Modifier.height(16.dp))
+                    AnsimOutlineButton("연결 해제", { confirming = true }, textColor = AnsimDangerText, height = 52.dp)
+                } else {
+                    Text("등록된 보호자가 없어요", style = ansimStyle(20, 28, FontWeight.Bold), color = AnsimInk)
+                    Spacer(Modifier.height(10.dp))
+                    Text("등록하면 위험 경고 화면에서 안전하게 가족에게 전화할 수 있어요.",
+                        style = AnsimType.BodyLong, color = AnsimMuted)
+                    Spacer(Modifier.height(24.dp))
+                    AnsimPrimaryButton("보호자 등록", onEdit)
+                }
             }
         }
-        Spacer(Modifier.height(12.dp))
-        AnsimPrimaryButton("홈으로", onBack)
+        if (confirming) AnsimBottomSheet(onDismiss = { confirming = false }) {
+            Text("보호자 연결을 해제할까요?", style = ansimStyle(20, 28, FontWeight.Bold), color = AnsimInk)
+            Spacer(Modifier.height(10.dp))
+            Text(if (hasPhone) "이 휴대폰에 저장된 보호자 번호가 지워지고, 경고 화면에서 바로 전화할 수 없어요."
+            else "해제하면 위험 문자 알림이 전송되지 않고, 경고 화면에서 바로 전화할 수 없어요.",
+                style = AnsimType.BodyLong, color = AnsimMuted)
+            Spacer(Modifier.height(20.dp))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                AnsimOutlineButton("취소", { confirming = false }, Modifier.weight(1f), height = 52.dp)
+                AnsimPrimaryButton("해제", {
+                    if (hasPhone) {
+                        prefs.edit().remove("guardian_name").remove("guardian_phone")
+                            .remove("guardian_relationship").remove("guardian_contact_saved_at").apply()
+                        name = ""; phone = ""; relation = ""; savedAt = 0L
+                    } else {
+                        DemoPairing.clear(context)
+                        demoLinked = false
+                    }
+                    confirming = false
+                }, modifier = Modifier.weight(1f), container = AnsimDanger, height = 52.dp,
+                    textStyle = AnsimType.ButtonSmall)
+            }
+        }
     }
 }
 
 @Composable
 private fun ContactInfo(label: String, value: String) {
-    Row(Modifier.fillMaxWidth().heightIn(min = 57.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-        Text(label, Modifier.width(95.dp), color = AnsimMuted, fontSize = 14.sp)
-        Text(value, Modifier.weight(1f), color = AnsimInk, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+    Row(Modifier.fillMaxWidth().heightIn(min = 52.dp), verticalAlignment = Alignment.CenterVertically) {
+        Text(label, Modifier.width(101.dp), style = AnsimType.Row, color = AnsimMuted)
+        Text(value, Modifier.weight(1f), style = ansimStyle(17, 24, FontWeight.Bold), color = AnsimInk)
     }
-    HorizontalDivider(color = Color(0xFFEDF0F2))
+    HorizontalDivider(color = AnsimDivider, thickness = 1.dp)
+}
+
+/** 시안 표기: 2026. 11. 2. */
+internal fun formatKoreanDate(epochMillis: Long): String {
+    if (epochMillis <= 0L) return "이전 등록"
+    val c = Calendar.getInstance().apply { timeInMillis = epochMillis }
+    return "${c.get(Calendar.YEAR)}. ${c.get(Calendar.MONTH) + 1}. ${c.get(Calendar.DAY_OF_MONTH)}."
+}
+
+internal fun formatGuardianPhone(raw: String): String {
+    val d = raw.filter(Char::isDigit)
+    return when (d.length) {
+        11 -> "${d.take(3)}-${d.substring(3, 7)}-${d.takeLast(4)}"
+        10 -> if (d.startsWith("02")) "02-${d.substring(2, 6)}-${d.takeLast(4)}" else "${d.take(3)}-${d.substring(3, 6)}-${d.takeLast(4)}"
+        else -> raw.trim()
+    }
 }

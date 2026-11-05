@@ -1,19 +1,19 @@
 package com.hackathon.ansimmessagepractice.guardian
 
-import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.runtime.remember
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.semantics.contentDescription
@@ -23,12 +23,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.hackathon.ansimmessagepractice.ui.theme.AnsimGreen
-import com.hackathon.ansimmessagepractice.ui.theme.AnsimInk
+import com.hackathon.ansimmessagepractice.ui.theme.*
 
-/** 하나의 입력창 + 6개의 시각적 칸: 붙여넣기, 연속 입력, 삭제에 모두 대응합니다. */
+/**
+ * 시안 8p 코드 입력: 하나의 입력창 + 6개 칸(48×60, 간격 8, 회색 1dp 테두리, 현재 칸은 2dp 파랑).
+ * 붙여넣기, 연속 입력, 삭제에 모두 대응합니다.
+ */
 @Composable
 fun SixDigitCodeField(value: String, onValueChange: (String) -> Unit, modifier: Modifier = Modifier) {
     val focusRequester = remember { FocusRequester() }
@@ -42,22 +45,18 @@ fun SixDigitCodeField(value: String, onValueChange: (String) -> Unit, modifier: 
         modifier = modifier.focusRequester(focusRequester).semantics { contentDescription = "6자리 연결번호, ${value.length}자리 입력됨" },
         decorationBox = { innerTextField ->
             Box {
-                Row(Modifier.fillMaxWidth().clickable { focusRequester.requestFocus() },
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Row(Modifier.widthIn(max = 328.dp).fillMaxWidth().clickable { focusRequester.requestFocus() },
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     repeat(6) { index ->
-                        val active = index == value.length.coerceAtMost(5)
-                        Surface(
-                            modifier = Modifier.weight(1f).height(58.dp),
-                            shape = RoundedCornerShape(11.dp),
-                            border = BorderStroke(if (active) 2.dp else 1.dp,
-                                if (active) AnsimGreen else Color(0xFFD5DFD8)),
-                            color = Color.White
+                        val active = index == value.length.coerceAtMost(5) && value.length < 6
+                        val shape = RoundedCornerShape(12.dp)
+                        Box(
+                            Modifier.weight(1f).height(60.dp).background(Color.White, shape)
+                                .border(if (active) 2.dp else 1.dp, if (active) AnsimBlue else AnsimBorder, shape),
+                            contentAlignment = Alignment.Center
                         ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Text(value.getOrNull(index)?.toString() ?: "", color = AnsimInk,
-                                    fontSize = 25.sp, fontWeight = FontWeight.Bold,
-                                    textAlign = TextAlign.Center)
-                            }
+                            Text(value.getOrNull(index)?.toString() ?: "", color = AnsimInk,
+                                style = ansimStyle(26, 32, FontWeight.Bold), textAlign = TextAlign.Center)
                         }
                     }
                 }
@@ -68,18 +67,20 @@ fun SixDigitCodeField(value: String, onValueChange: (String) -> Unit, modifier: 
     )
 }
 
+/**
+ * 시안 7p·10p 코드 표시: 흰 칸(테두리 없음, 높이 56, 간격 10) + 32px 굵은 숫자.
+ * expired=true면 숫자를 회색 취소선으로 표시합니다.
+ */
 @Composable
-fun SixDigitReadOnly(code: String, modifier: Modifier = Modifier) {
-    Row(modifier, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+fun SixDigitReadOnly(code: String, modifier: Modifier = Modifier, expired: Boolean = false) {
+    Row(modifier, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         repeat(6) { i ->
-            Surface(Modifier.weight(1f).height(58.dp),
-                shape = RoundedCornerShape(11.dp),
-                border = BorderStroke(1.dp, AnsimGreen),
-                color = Color.White) {
-                Box(contentAlignment = Alignment.Center) {
-                    Text(code.getOrNull(i)?.toString() ?: "–", color = AnsimInk,
-                        fontSize = 25.sp, fontWeight = FontWeight.Bold)
-                }
+            Box(Modifier.weight(1f).height(56.dp).background(Color.White, RoundedCornerShape(10.dp)),
+                contentAlignment = Alignment.Center) {
+                Text(code.getOrNull(i)?.toString() ?: "–",
+                    color = if (expired) Color(0xFF989EA7) else AnsimInk,
+                    style = ansimStyle(32, 40, FontWeight.Bold),
+                    textDecoration = if (expired) TextDecoration.LineThrough else null)
             }
         }
     }

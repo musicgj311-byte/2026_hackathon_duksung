@@ -16,7 +16,8 @@ internal data class OverlayCopy(
     val closeLabel: String
 )
 
-internal fun overlayCopy(risk: String, mode: String, language: String): OverlayCopy {
+internal fun overlayCopy(risk: String, mode: String, language: String, scamType: String = "none"): OverlayCopy {
+    val link = com.hackathon.ansimmessagepractice.ui.warning.isLinkScam(scamType, risk == "danger")
     val easy = mode == "쉬운 안내"
     val hearing = mode == "화면 안내 중심"
     val voice = mode == "음성 안내 중심"
@@ -31,6 +32,7 @@ internal fun overlayCopy(risk: String, mode: String, language: String): OverlayC
     val titleKo = when (risk) {
         "danger" -> "방금 받은 문자의 링크를 누르거나 송금하지 마세요."
         "checking" -> "문자를 확인하고 있어요."
+        "timeout" -> "확인을 완료하지 못했어요. 확인 전까지 링크나 송금은 멈춰 주세요."
         else -> "사기일 수 있어요. 링크를 누르지 마세요."
     }
     val titleForeign = when (language) {
@@ -51,15 +53,20 @@ internal fun overlayCopy(risk: String, mode: String, language: String): OverlayC
         }
         else -> titleKo
     }
-    val shortTitle = when (risk) {
-        "danger" -> "돈 보내지 마세요."
-        "checking" -> "잠깐 멈춰 주세요."
-        else -> "링크 누르지 마세요."
+    val shortTitle = when {
+        risk == "checking" -> "잠깐 멈춰 주세요."
+        risk == "timeout" -> "확인이 안 됐어요. 링크·송금은 멈추세요."
+        link -> "링크 누르지 마세요."
+        risk == "danger" -> "돈 보내지 마세요."
+        else -> "돈 보내기 전에 확인하세요."
     }
+    val foreignTimeout = if (risk == "timeout" && bilingual)
+        com.hackathon.ansimmessagepractice.ui.warning.foreignCopyForDisplayLanguage(language)?.timeoutWarn else null
     val headline = when {
         easy -> shortTitle
-        bilingual -> titleForeign
-        hearing -> if (risk == "danger") "사기 문자예요. 돈을 보내지 마세요." else titleKo
+        bilingual -> foreignTimeout ?: titleForeign
+        hearing -> if (risk == "checking" || risk == "timeout") titleKo
+        else com.hackathon.ansimmessagepractice.ui.warning.koreanSummary(risk == "danger", link)
         else -> titleKo
     }
     val guide = if (bilingual) titleKo else ""

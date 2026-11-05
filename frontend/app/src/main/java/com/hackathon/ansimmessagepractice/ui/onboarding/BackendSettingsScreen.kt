@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.sp
 import com.hackathon.ansimmessagepractice.data.api.BackendApi
 import com.hackathon.ansimmessagepractice.data.api.BackendConfig
 import com.hackathon.ansimmessagepractice.data.api.UserSync
+import com.hackathon.ansimmessagepractice.guardian.DemoPairing
 import com.hackathon.ansimmessagepractice.ui.theme.AnsimInk
 import com.hackathon.ansimmessagepractice.ui.theme.AnsimMuted
 import kotlinx.coroutines.launch
@@ -27,11 +28,22 @@ fun BackendSettingsScreen(onBack: () -> Unit) {
     var status by remember { mutableStateOf("서버 연결 상태를 확인할 수 있어요.") }
     var running by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+    var demoMode by remember { mutableStateOf(DemoPairing.enabled(context)) }
     Column(Modifier.fillMaxSize().background(Color.White).statusBarsPadding().navigationBarsPadding()
         .verticalScroll(rememberScrollState()).padding(22.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)) {
         TextButton(onClick = onBack) { Text("‹  설정으로", color = AnsimInk) }
         Text("개발자 도구 · 서버 연결", fontSize = 25.sp, fontWeight = FontWeight.Bold, color = AnsimInk)
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Column(Modifier.weight(1f)) {
+                Text("연결 화면 시연 모드", fontWeight = FontWeight.Bold, color = AnsimInk)
+                Text("켜면 실제 서버 대신 로컬 연결 시연만 합니다. 실제 연결·알림은 발생하지 않아요.",
+                    fontSize = 12.sp, color = AnsimMuted)
+            }
+            Switch(checked = demoMode, onCheckedChange = {
+                demoMode = it; DemoPairing.setEnabled(context, it)
+            })
+        }
         Text("서버 주소는 data/api/BackendApi.kt의 BackendConfig.SERVER_URL에서 설정해요.",
             fontSize = 14.sp, color = AnsimMuted)
         Text(if (baseUrl.isBlank()) "현재 서버 주소: 미설정 (로컬 경고 시연 유지)"
@@ -52,10 +64,11 @@ fun BackendSettingsScreen(onBack: () -> Unit) {
                 }.getOrElse { "연결 실패: ${it.message ?: "네트워크 오류"}" }
                 running = false
             }
-        }, enabled = !running && BackendConfig.isConfigured(context), modifier = Modifier.fillMaxWidth()) {
+        }, enabled = !demoMode && !running && BackendConfig.isConfigured(context), modifier = Modifier.fillMaxWidth()) {
             Text(if (running) "확인 중..." else "연결 테스트 (/health + 사용자 등록)")
         }
-        Text(status, fontSize = 14.sp, color = AnsimInk)
+        Text(if (demoMode) "시연 모드에서는 연결 테스트를 사용하지 않아요." else status,
+            fontSize = 14.sp, color = AnsimInk)
         Spacer(Modifier.height(12.dp))
         Text("개발용 진단 화면입니다. 운영 환경에서는 HTTPS와 사용자 인증이 필요합니다.",
             fontSize = 12.sp, color = AnsimMuted)

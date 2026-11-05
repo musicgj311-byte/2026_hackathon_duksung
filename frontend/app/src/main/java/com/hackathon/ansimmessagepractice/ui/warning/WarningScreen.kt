@@ -33,10 +33,15 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.window.Dialog
+import com.hackathon.ansimmessagepractice.guardian.DemoPairing
 import com.hackathon.ansimmessagepractice.guardian.GuardianCall
 import com.hackathon.ansimmessagepractice.guardian.rememberGuardianCallAction
 import com.hackathon.ansimmessagepractice.ui.theme.*
+import com.hackathon.ansimmessagepractice.ui.onboarding.AnsimBottomSheet
+import com.hackathon.ansimmessagepractice.ui.onboarding.AnsimOutlineButton
+import com.hackathon.ansimmessagepractice.ui.onboarding.AnsimPrimaryButton
 import kotlinx.coroutines.delay
 
 /**
@@ -74,6 +79,9 @@ fun WarningScreen(
     val isKakao = data.sourceApp == "kakao"
     val simpleMode = selectedType == "쉬운 안내" && !pending
     val hearingMode = selectedType == "화면 안내 중심" && !pending
+    // 확인 지연(timeout)도 사용자가 고른 알림 방식에 맞는 화면·소리·진동으로 안내합니다.
+    val timeout = data.level == "timeout"
+    val hearingType = selectedType == "화면 안내 중심"
     val hasPhone = GuardianCall.validNumber(GuardianCall.savedNumber(context))
     val savedName = GuardianCall.savedName(context).ifBlank { "가족" }
     val savedNumber = GuardianCall.savedNumber(context)
@@ -110,15 +118,26 @@ fun WarningScreen(
     val call: () -> Unit = {
         if (hasPhone) callGuardian() else showNoPhoneDialog = true
     }
+    // 시안처럼 관계(딸·아들 등)로 부릅니다. 관계가 없으면 이름, 그것도 없으면 '가족'.
+    val savedRelation = context.getSharedPreferences("ansim_settings", android.content.Context.MODE_PRIVATE)
+        .getString("guardian_relationship", "").orEmpty().trim()
+    val demoLinked = DemoPairing.approved(context)
+    val who = when {
+        hasPhone && savedRelation.isNotBlank() -> savedRelation
+        hasPhone -> savedName
+        demoLinked -> "딸"
+        else -> "가족"
+    }
+    val guardianName = when {
+        hasPhone && GuardianCall.savedName(context).isNotBlank() -> GuardianCall.savedName(context)
+        demoLinked || isMockPreview -> DemoPairing.GUARDIAN_NAME.substringBefore(" (")
+        else -> "보호자"
+    }
     val callLabel = when (languageCode) {
         "vi" -> "Gọi cho gia đình"
         "en" -> "Call your family"
         "zh" -> "给家人打电话"
-        else -> when {
-            !hasPhone -> "가족에게 전화해서 확인"
-            caution -> "가족에게 물어보기"
-            else -> "${savedName}에게 직접 전화하기"
-        }
+        else -> if (caution) "가족에게 물어보기" else "${who}에게 전화하기"
     }
     val closeLabel = when (languageCode) {
         "vi" -> "Đóng · 닫기"
@@ -146,8 +165,21 @@ fun WarningScreen(
         }
     }
     DisposableEffect(tts) { onDispose { tts.stop(); tts.shutdown() } }
-    val spokenText = sanitizedSpeech(if (simpleMode) data.easySentence else
-        "${data.title}. ${data.explanation}. ${data.action}")
+    val linkType = isLinkScam(data.scamType, danger)
+    val foreign = foreignCopy(languageCode)
+    // 음성 모드 화면(31p)의 '읽어 드리는 내용'과 실제 소리가 같도록 한 곳에서 만듭니다.
+    val voiceQuote = if (isMockPreview && danger && data.scamType == "family_impersonation" && languageCode == "ko")
+        "가족인 척 돈을 보내라고 해요. 원래 번호로 직접 전화해서 확인하세요."
+    else listOf(data.explanation, data.action).filter(String::isNotBlank).joinToString(" ")
+    val timeoutQuote = if (foreign != null) "${foreign.timeoutWarn} ${foreign.callToCheck}."
+    else "확인되기 전까지 링크를 누르거나 송금하지 마세요. 가족에게 전화해서 확인하세요."
+    val spokenText = sanitizedSpeech(when {
+        timeout -> "${foreign?.timeoutTitle?.replace("\n", " ") ?: "확인을 완료하지 못했어요"}. $timeoutQuote"
+        simpleMode -> data.easySentence
+        voiceMode && (danger || caution) && languageCode == "ko" ->
+            "${koreanSummary(danger, linkType)} $voiceQuote"
+        else -> "${data.title.replace("\n", " ")}. ${data.explanation}. ${data.action}"
+    })
     fun speak() {
         if (screenReader) {
             rootView.announceForAccessibility(spokenText)
@@ -160,7 +192,8 @@ fun WarningScreen(
     }
     LaunchedEffect(ttsReady, spokenText, voiceMode, pending, screenReader) {
         // Only the voice-oriented mode plays automatically; never compete with TalkBack.
-        if (ttsReady && voiceMode && !pending && !screenReader) speak()
+        // 확인 지연도 음성 안내 모드에서는 자동으로 읽어 줍니다(확인 중 단계만 제외).
+        if (ttsReady && voiceMode && data.level != "checking" && !screenReader) speak()
     }
     fun openBlockSettings() {
         val started = runCatching {
@@ -172,16 +205,16 @@ fun WarningScreen(
         if (!started) showBlockHelp = true
     }
     LaunchedEffect(data.level, selectedType) {
-        if (danger || hearingMode || selectedType == "음성 안내 중심") {
+        if (danger || hearingType || selectedType == "음성 안내 중심") {
             vibrateSafely(context, danger)
         }
     }
 
     // 주의 모드까지 전부 빨간 화면으로 처리하던 문제 수정.
     var flashVisible by remember { mutableStateOf(false) }
-    LaunchedEffect(hearingMode, data.level) {
+    LaunchedEffect(hearingType, data.level) {
         flashVisible = false
-        if (hearingMode && (danger || caution)) {
+        if (hearingType && (danger || caution || timeout)) {
             // 광과민성 고려: 강한 명암 전환 없이 약한 배경 강조를 10회 반복합니다.
             // 화면을 벗어나면 LaunchedEffect가 취소되므로 점멸도 중단됩니다.
             repeat(10) {
@@ -213,28 +246,6 @@ fun WarningScreen(
                 }) { Text("118 전화 앱 열기") }
             }, dismissButton = { TextButton(onClick = { showReportDialog = false }) { Text("닫기") } })
     }
-    if (showNoPhoneDialog) {
-        Dialog(onDismissRequest = { showNoPhoneDialog = false }) {
-            Surface(shape = RoundedCornerShape(18.dp), color = Color.White) {
-                Column(Modifier.padding(22.dp), verticalArrangement = Arrangement.spacedBy(13.dp)) {
-                    Text("등록된 가족 전화번호가 없어요", color = AnsimInk,
-                        fontWeight = FontWeight.ExtraBold, fontSize = 20.sp)
-                    Text("보호자 연결과 전화번호 저장은 별개예요. 이미 알고 있는 가족 번호로 직접 확인하세요. 문자에 적힌 번호로는 전화하지 마세요.",
-                        color = AnsimMuted, fontSize = 14.sp, lineHeight = 21.sp)
-                    Button(onClick = { showNoPhoneDialog = false; onRegisterGuardianClick() },
-                        modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = AnsimGreen)) {
-                        Text("가족 연락처 등록")
-                    }
-                    OutlinedButton(onClick = { showNoPhoneDialog = false; onManualNumberClick() },
-                        modifier = Modifier.fillMaxWidth()) { Text("번호 직접 입력") }
-                    TextButton(onClick = { showNoPhoneDialog = false }, modifier = Modifier.fillMaxWidth()) {
-                        Text("닫기", color = AnsimMuted)
-                    }
-                }
-            }
-        }
-    }
-
     if (showSmsNumberDialog) {
         Dialog(onDismissRequest = { showSmsNumberDialog = false }) {
             Surface(shape = RoundedCornerShape(18.dp), color = Color.White) {
@@ -276,9 +287,10 @@ fun WarningScreen(
             SimpleWarningPage(
                 level = data.level,
                 sentence = data.easySentence,
-                callLabel = callLabel,
+                callLabel = "${who}에게 전화",
                 call = call,
-                onClose = onCloseClick
+                onClose = onCloseClick,
+                link = linkType, foreign = foreign
             )
         } else if (hearingMode) {
             HearingVisualWarningPage(
@@ -288,7 +300,47 @@ fun WarningScreen(
                 danger = danger,
                 onSms = sms,
                 onCall = call,
-                onClose = onCloseClick
+                onClose = onCloseClick,
+                smsLabel = "${who}에게 문자보내기",
+                link = linkType, foreign = foreign
+            )
+        } else if (timeout && selectedType == "쉬운 안내") {
+            SimpleTimeoutPage(onRetry = onRetryClick, call = call, onClose = onCloseClick,
+                callLabel = "${who}에게 전화", foreign = foreign)
+        } else if (timeout && hearingType) {
+            HearingTimeoutPage(onRetry = onRetryClick, onSms = sms, onClose = onCloseClick,
+                smsLabel = "${who}에게 문자보내기", foreign = foreign)
+        } else if (timeout && voiceMode) {
+            VoiceTimeoutPage(quote = timeoutQuote, onRetry = onRetryClick, onCall = call,
+                onReplay = { speak() }, replayEnabled = ttsReady || screenReader, onClose = onCloseClick,
+                callLabel = "${who}에게 전화해서 확인", foreign = foreign)
+        } else if (timeout) {
+            TimeoutWarningPage(
+                onRetry = onRetryClick, onCall = call, onClose = onCloseClick,
+                callLabel = "${who}에게 전화해서 확인", foreign = foreign
+            )
+        } else if (foreign != null && (danger || caution)) {
+            // 외국어: 시안 32p 이중언어 화면 (위험·주의 모두)
+            BilingualWarningPage(data, isMockPreview, foreign, isKakao, onCall = call, onClose = onCloseClick)
+        } else if (isKakao && danger) {
+            KakaoWarningPage(
+                data = data, preview = isMockPreview, callLabel = "${who}에게 직접 전화하기",
+                onCall = call, onReport = { showReportDialog = true },
+                onReplay = { speak() }, replayEnabled = ttsReady || screenReader,
+                onClose = onCloseClick, guardianName = guardianName
+            )
+        } else if (voiceMode && (danger || caution)) {
+            VoiceGuidedWarningPage(
+                data = data, callLabel = if (danger) "${who}에게 직접 전화하기" else "가족에게 물어보기", onCall = call,
+                onReplay = { speak() }, replayEnabled = ttsReady || screenReader, quote = voiceQuote
+            )
+        } else if (danger || caution) {
+            FullColorWarningPage(
+                data = data, preview = isMockPreview, callLabel = callLabel,
+                isKakao = isKakao, onCall = call, onBlock = { openBlockSettings() },
+                onReport = { showReportDialog = true }, onReplay = { speak() },
+                replayEnabled = ttsReady || screenReader, onClose = onCloseClick,
+                guardianName = guardianName
             )
         } else {
             Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()) {
@@ -369,7 +421,7 @@ fun WarningScreen(
                                     verticalArrangement = Arrangement.spacedBy(5.dp)) {
                                     Text("${if (isKakao) "받은 카카오톡" else "받은 문자"} · ${data.sender ?: "알 수 없는 발신자"}",
                                         color = AnsimMuted, fontSize = 12.sp)
-                                    Text(data.receivedMessage, color = AnsimInk,
+                                    Text(data.receivedMessage.orEmpty(), color = AnsimInk,
                                         fontSize = 15.sp, lineHeight = 22.sp)
                                 }
                             }
@@ -477,7 +529,7 @@ fun WarningScreen(
                             // 위험 기본 화면은 전화 / 차단·신고 / 다시 듣기·닫기.
                             WarningMainAction("☎  ${callLabel}", AnsimDanger, call)
                             if (isKakao) {
-                                Surface(color = Color(0xFFF5F6F8), shape = RoundedCornerShape(7.dp)) {
+                                Surface(color = Color(0xFFF5F6F8), shape = RoundedCornerShape(26.dp)) {
                                     Text("카카오톡 대화방에서 차단해 주세요.\n대화방 오른쪽 위 메뉴에서 차단을 선택하세요.",
                                         Modifier.fillMaxWidth().padding(horizontal = 13.dp, vertical = 11.dp),
                                         color = AnsimInk, fontSize = 13.sp, lineHeight = 19.sp)
@@ -510,123 +562,278 @@ fun WarningScreen(
         if (flashVisible) {
             Box(Modifier.fillMaxSize().background(accentColor.copy(alpha = 0.10f)))
         }
+        // 최종 시안 24p: 보호자 번호가 없을 때 경고 화면 위에 하단 시트로 안내합니다.
+        if (showNoPhoneDialog) AnsimBottomSheet(onDismiss = { showNoPhoneDialog = false }) {
+            Text("등록된 보호자가 없어요", style = ansimStyle(20, 28, FontWeight.Bold), color = AnsimInk)
+            Spacer(Modifier.height(10.dp))
+            Text("보호자를 등록하면 버튼 하나로 바로 전화할 수 있어요.", style = AnsimType.Body, color = AnsimMuted)
+            Spacer(Modifier.height(22.dp))
+            AnsimPrimaryButton("보호자 등록", { showNoPhoneDialog = false; onRegisterGuardianClick() })
+            Spacer(Modifier.height(10.dp))
+            AnsimOutlineButton("번호 직접 입력", { showNoPhoneDialog = false; onManualNumberClick() }, height = 52.dp)
+            Spacer(Modifier.height(6.dp))
+            WarningTextButton("닫기", { showNoPhoneDialog = false }, AnsimMuted)
+        }
     }
 }
 
-/** 쉬운 안내는 큰 그림·한 문장·전화 버튼 하나만 둡니다. */
+/**
+ * 최종 시안 30p: 쉬운 안내는 큰 금지 그림 · 큰 한 문장 · 전화 버튼 하나.
+ * 시안에는 없지만 추가 요구 사항에 따라 아래에 '닫기' 버튼을 둡니다.
+ * 외국어를 고른 경우 선택 언어 문장을 크게, 한국어를 그 아래에 작게 보여줍니다.
+ */
 @Composable
 private fun SimpleWarningPage(
     level: String, sentence: String, callLabel: String, call: () -> Unit,
-    onClose: () -> Unit
+    onClose: () -> Unit, link: Boolean = false, foreign: ForeignCopy? = null
 ) {
     val caution = level == "caution"
+    val danger = !caution
     val accent = if (caution) AnsimCaution else AnsimDanger
     Column(
         Modifier.fillMaxSize().background(Color.White).statusBarsPadding().navigationBarsPadding()
-            .padding(horizontal = 24.dp, vertical = 16.dp),
+            .padding(start = 24.dp, end = 24.dp, bottom = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(if (caution) "주의" else "위험", color = accent,
-            fontWeight = FontWeight.Bold, fontSize = 16.sp)
-        Spacer(Modifier.height(9.dp))
-        HorizontalDivider(color = accent, thickness = 2.dp)
-        Column(Modifier.weight(1f).fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center) {
+        Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally) {
+            Spacer(Modifier.height(60.dp))
             Canvas(Modifier.size(192.dp).semantics {
-                contentDescription = if (caution) "주의 표시" else "돈 보내기 금지 표시"
-            }) {
-                val width = size.width
-                val stroke = width * 0.060f
-                drawCircle(color = accent, radius = width * .43f, style = Stroke(width = stroke))
-                if (caution) {
-                    drawLine(color = accent, start = Offset(width * .5f, width * .29f),
-                        end = Offset(width * .5f, width * .54f), strokeWidth = stroke, cap = StrokeCap.Round)
-                    drawCircle(color = accent, radius = width * .022f,
-                        center = Offset(width * .5f, width * .69f))
-                } else {
-                    drawRoundRect(color = AnsimInk,
-                        topLeft = Offset(width * .23f, width * .36f),
-                        size = Size(width * .54f, width * .28f),
-                        cornerRadius = androidx.compose.ui.geometry.CornerRadius(width * .025f),
-                        style = Stroke(width = width * .026f))
-                    drawLine(color = accent,
-                        start = Offset(width * .20f, width * .20f),
-                        end = Offset(width * .80f, width * .80f),
-                        strokeWidth = stroke * 1.15f, cap = StrokeCap.Round)
+                contentDescription = when {
+                    caution -> "주의 표시"
+                    link -> "링크 누르기 금지 표시"
+                    else -> "돈 보내기 금지 표시"
                 }
+            }) {
+                val k = size.width / 192f
+                val c = Offset(96f * k, 96f * k)
+                if (caution) {
+                    drawLine(accent, Offset(96f * k, 52f * k), Offset(96f * k, 108f * k),
+                        strokeWidth = 12f * k, cap = StrokeCap.Round)
+                    drawCircle(accent, radius = 7f * k, center = Offset(96f * k, 136f * k))
+                } else {
+                    if (link) {
+                        // 사슬 고리 두 개(링크) 위에 빨간 사선
+                        val stroke = Stroke(width = 7f * k, cap = StrokeCap.Round)
+                        drawRoundRect(AnsimInk, topLeft = Offset(40f * k, 76f * k), size = Size(66f * k, 40f * k),
+                            cornerRadius = androidx.compose.ui.geometry.CornerRadius(20f * k), style = stroke)
+                        drawRoundRect(AnsimInk, topLeft = Offset(86f * k, 76f * k), size = Size(66f * k, 40f * k),
+                            cornerRadius = androidx.compose.ui.geometry.CornerRadius(20f * k), style = stroke)
+                    } else {
+                        // 지폐(둥근 사각형 + 가운데 원) 위에 빨간 사선
+                        drawRoundRect(AnsimInk, topLeft = Offset(36f * k, 58f * k), size = Size(120f * k, 76f * k),
+                            cornerRadius = androidx.compose.ui.geometry.CornerRadius(9f * k), style = Stroke(width = 6f * k))
+                        drawCircle(AnsimInk, radius = 18f * k, center = c, style = Stroke(width = 6f * k))
+                    }
+                    drawLine(Color.White, Offset(34f * k, 34f * k), Offset(158f * k, 158f * k),
+                        strokeWidth = 17f * k, cap = StrokeCap.Round)
+                    drawLine(accent, Offset(34f * k, 34f * k), Offset(158f * k, 158f * k),
+                        strokeWidth = 9f * k, cap = StrokeCap.Round)
+                }
+                drawCircle(accent, radius = 88f * k, center = c, style = Stroke(width = 8.6f * k))
             }
-            Spacer(Modifier.height(26.dp))
-            Text(sentence, color = AnsimInk, fontSize = 38.sp, lineHeight = 48.sp,
-                fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center)
+            Spacer(Modifier.height(37.dp))
+            if (foreign != null) {
+                Text((if (danger) foreign.shortScam + "\n" else "") + if (link) foreign.shortLink else foreign.shortMoney,
+                    color = AnsimInk, style = ansimStyle(44, 56, FontWeight.Bold), textAlign = TextAlign.Center)
+                Spacer(Modifier.height(14.dp))
+                Text(koreanSummary(danger, link), color = AnsimMuted,
+                    style = ansimStyle(19, 27, FontWeight.SemiBold), textAlign = TextAlign.Center)
+            } else {
+                Text(koreanEasyHeadline(danger, link),
+                    color = AnsimInk, style = ansimStyle(50, 65, FontWeight.Bold), textAlign = TextAlign.Center)
+            }
+            Spacer(Modifier.height(24.dp))
         }
-        Button(onClick = call, modifier = Modifier.fillMaxWidth().height(62.dp),
-            shape = RoundedCornerShape(8.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = AnsimGreen)) {
-            Text("☎  $callLabel", color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 19.sp)
-        }
-        WarningTextAction("닫기", onClose)
+        if (foreign != null) WarningPill(foreign.call, call, AnsimBlue, Color.White, 88.dp, icon = AnsimIcons.Phone,
+            style = ansimStyle(28, 34, FontWeight.Bold), secondLine = "가족에게 전화")
+        else WarningPill(callLabel, call, AnsimBlue, Color.White, 88.dp, icon = AnsimIcons.Phone,
+            style = ansimStyle(34, 42, FontWeight.Bold))
+        Spacer(Modifier.height(8.dp))
+        WarningTextButton(if (foreign != null) "${foreign.close} · 닫기" else "닫기", onClose, AnsimMuted,
+            ansimStyle(19, 26, FontWeight.Bold))
     }
 }
 
-/** 화면·진동 우선 모드. 빨간 안내와 두 개의 행동 버튼만 표시합니다. */
+/**
+ * 최종 시안 29p: 화면·진동 우선 모드. 큰 글씨 두 줄 + 문자/영상통화 버튼 두 개 + 닫기(추가 요구 사항).
+ * 외국어를 고른 경우 선택 언어 문장 + 한국어 한 줄을 함께 표시합니다.
+ */
 @Composable
 private fun HearingVisualWarningPage(
     title: String, explanation: String, action: String,
     danger: Boolean, onSms: () -> Unit, onCall: () -> Unit,
-    onClose: () -> Unit
+    onClose: () -> Unit,
+    smsLabel: String = "가족에게 문자보내기",
+    link: Boolean = false, foreign: ForeignCopy? = null
 ) {
-    val accent = if (danger) AnsimDanger else AnsimCaution
-    Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().background(accent)
-        .padding(horizontal = 15.dp, vertical = 14.dp)) {
-        Text("⚠  화면 강조 · 진동 중", color = Color.White, fontSize = 13.sp,
-            fontWeight = FontWeight.SemiBold)
-        Spacer(Modifier.height(12.dp))
-        Text(title, color = Color.White, fontSize = 36.sp, lineHeight = 44.sp,
-            fontWeight = FontWeight.ExtraBold)
-        Spacer(Modifier.height(12.dp))
-        Column(Modifier.fillMaxWidth().weight(1f).background(Color.White).padding(17.dp)) {
-            Text(explanation, color = AnsimInk, fontSize = 18.sp, lineHeight = 28.sp,
-                fontWeight = FontWeight.Bold)
-            if (action.isNotBlank()) {
-                Spacer(Modifier.height(9.dp))
-                Text(action, color = AnsimInk, fontSize = 15.sp, lineHeight = 23.sp)
+    val background = if (danger) AnsimAlertRed else AnsimYellow
+    val ink = if (danger) Color.White else Color(0xFF18191B)
+    StatusBarIcons(light = danger)
+    Box(Modifier.fillMaxSize().background(background).statusBarsPadding().navigationBarsPadding()) {
+        Canvas(Modifier.fillMaxSize()) {
+            val k = size.width / 390f
+            drawCircle(if (danger) Color(0xFFD3313E) else Color(0xFFFFD569), radius = 129.7f * k,
+                center = Offset(279.5f * k, 116.5f * k))
+        }
+        Column(Modifier.fillMaxSize().padding(start = 22.dp, end = 22.dp, top = 40.dp, bottom = 12.dp)) {
+            Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
+                WarningChip(if (foreign != null) "${foreign.level(danger)} · ${if (danger) "위험" else "주의"}"
+                else if (danger) "위험" else "주의",
+                    container = if (danger) Color.White else Color(0xFF121318),
+                    content = if (danger) AnsimDanger else AnsimYellow)
+                Spacer(Modifier.height(19.dp))
+                if (foreign != null) {
+                    Text(if (danger) foreign.shortScam else foreign.shortCareful, color = ink,
+                        style = ansimStyle(50, 58, FontWeight.ExtraBold).copy(letterSpacing = (-0.02).em))
+                    Spacer(Modifier.height(16.dp))
+                    Text(if (link) foreign.shortLink else foreign.shortMoney, color = ink,
+                        style = ansimStyle(44, 52, FontWeight.ExtraBold).copy(letterSpacing = (-0.02).em))
+                    Spacer(Modifier.height(18.dp))
+                    Text(koreanSummary(danger, link), color = ink.copy(alpha = .9f),
+                        style = ansimStyle(19, 27, FontWeight.SemiBold))
+                } else {
+                    Text(if (danger) "사기문자예요." else "조심하세요.", color = ink,
+                        style = ansimStyle(65, 72, FontWeight.ExtraBold).copy(letterSpacing = (-0.03).em))
+                    Spacer(Modifier.height(22.dp))
+                    Text(koreanHearingAction(link), color = ink,
+                        style = ansimStyle(55, 59.4, FontWeight.ExtraBold).copy(letterSpacing = (-0.02).em))
+                }
             }
-            Spacer(Modifier.weight(1f))
-            WarningMainAction("✉  가족에게 문자 보내기", accent, onSms)
-            Spacer(Modifier.height(8.dp))
-            WarningSecondaryAction("☎  전화로 확인하기", onClick = onCall)
-            WarningTextAction("닫기", onClose)
+            WarningPill(foreign?.sms ?: smsLabel, onSms, Color.White, if (danger) AnsimDanger else Color(0xFF18191B), 68.dp,
+                style = ansimStyle(19, 26, FontWeight.Bold), secondLine = if (foreign != null) "가족에게 문자보내기" else null)
+            Spacer(Modifier.height(10.dp))
+            WarningPill(foreign?.videoCall ?: "영상통화로 확인", onCall,
+                if (danger) Color.White.copy(alpha = .15f) else Color(0xFFFFE5A8), ink, 54.dp,
+                style = ansimStyle(19, 26, FontWeight.Bold), secondLine = if (foreign != null) "영상통화로 확인" else null)
+            // 추가 요구 사항: 화면 안내 모드에도 닫기 버튼을 둡니다.
+            Spacer(Modifier.height(6.dp))
+            WarningTextButton(if (foreign != null) "${foreign.close} · 닫기" else "닫기", onClose, ink.copy(alpha = .9f),
+                ansimStyle(17, 24, FontWeight.Bold))
         }
     }
 }
 
-/** 위험·주의·설정 화면에서 파란색/빨간색, 높이, 모서리를 일관되게 유지합니다. */
+/** 쉬운 안내 모드의 확인 지연: 큰 시계 그림 + 큰 한 문장 + 전화 버튼, 다시 확인, 닫기 */
+@Composable
+private fun SimpleTimeoutPage(
+    onRetry: () -> Unit, call: () -> Unit, onClose: () -> Unit, callLabel: String,
+    foreign: ForeignCopy? = null
+) {
+    Column(
+        Modifier.fillMaxSize().background(Color.White).statusBarsPadding().navigationBarsPadding()
+            .padding(start = 24.dp, end = 24.dp, bottom = 16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally) {
+            Spacer(Modifier.height(60.dp))
+            Canvas(Modifier.size(192.dp).semantics { contentDescription = "확인 지연 표시" }) {
+                val k = size.width / 192f
+                val c = Offset(96f * k, 96f * k)
+                drawCircle(Color(0xFFE29A2E), radius = 88f * k, center = c, style = Stroke(width = 8.6f * k))
+                drawLine(AnsimInk, c, Offset(96f * k, 50f * k), strokeWidth = 9f * k, cap = StrokeCap.Round)
+                drawLine(AnsimInk, c, Offset(128f * k, 114f * k), strokeWidth = 9f * k, cap = StrokeCap.Round)
+            }
+            Spacer(Modifier.height(37.dp))
+            if (foreign != null) {
+                Text(foreign.timeoutTitle, color = AnsimInk, style = ansimStyle(40, 50, FontWeight.Bold),
+                    textAlign = TextAlign.Center)
+                Spacer(Modifier.height(14.dp))
+                Text("확인이 안 됐어요. 링크·송금은 멈추세요.", color = AnsimMuted,
+                    style = ansimStyle(19, 27, FontWeight.SemiBold), textAlign = TextAlign.Center)
+            } else {
+                Text("확인이 안 됐어요.\n링크·송금은\n멈추세요.", color = AnsimInk,
+                    style = ansimStyle(46, 60, FontWeight.Bold), textAlign = TextAlign.Center)
+            }
+            Spacer(Modifier.height(24.dp))
+        }
+        if (foreign != null) WarningPill(foreign.call, call, AnsimBlue, Color.White, 88.dp, icon = AnsimIcons.Phone,
+            style = ansimStyle(28, 34, FontWeight.Bold), secondLine = "가족에게 전화")
+        else WarningPill(callLabel, call, AnsimBlue, Color.White, 88.dp, icon = AnsimIcons.Phone,
+            style = ansimStyle(34, 42, FontWeight.Bold))
+        Spacer(Modifier.height(10.dp))
+        WarningOutline(foreign?.let { "${it.retry} · 다시 확인" } ?: "다시 확인", onRetry, 60.dp,
+            icon = AnsimIcons.RotateCcw, style = ansimStyle(20, 26, FontWeight.Bold))
+        Spacer(Modifier.height(4.dp))
+        WarningTextButton(if (foreign != null) "${foreign.close} · 닫기" else "닫기", onClose, AnsimMuted,
+            ansimStyle(19, 26, FontWeight.Bold))
+    }
+}
+
+/** 화면 안내 모드의 확인 지연: 29p 구조를 노란 색으로. 큰 글씨 + 다시 확인 / 문자 보내기 / 닫기 */
+@Composable
+private fun HearingTimeoutPage(
+    onRetry: () -> Unit, onSms: () -> Unit, onClose: () -> Unit, smsLabel: String,
+    foreign: ForeignCopy? = null
+) {
+    val ink = Color(0xFF18191B)
+    Box(Modifier.fillMaxSize().background(AnsimYellow).statusBarsPadding().navigationBarsPadding()) {
+        Canvas(Modifier.fillMaxSize()) {
+            val k = size.width / 390f
+            drawCircle(Color(0xFFFFD569), radius = 129.7f * k, center = Offset(279.5f * k, 116.5f * k))
+        }
+        Column(Modifier.fillMaxSize().padding(start = 22.dp, end = 22.dp, top = 40.dp, bottom = 12.dp)) {
+            Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
+                WarningChip(if (foreign != null) "${foreign.timeoutEyebrow} · 확인 지연" else "확인 지연",
+                    container = Color(0xFF121318), content = AnsimYellow)
+                Spacer(Modifier.height(19.dp))
+                if (foreign != null) {
+                    Text(foreign.timeoutTitle, color = ink,
+                        style = ansimStyle(44, 52, FontWeight.ExtraBold).copy(letterSpacing = (-0.02).em))
+                    Spacer(Modifier.height(16.dp))
+                    Text(foreign.timeoutWarn, color = ink, style = ansimStyle(24, 32, FontWeight.Bold))
+                    Spacer(Modifier.height(14.dp))
+                    Text("확인을 완료하지 못했어요. 링크·송금은 멈추세요.", color = ink.copy(alpha = .85f),
+                        style = ansimStyle(19, 27, FontWeight.SemiBold))
+                } else {
+                    Text("확인을\n못 했어요.", color = ink,
+                        style = ansimStyle(60, 66, FontWeight.ExtraBold).copy(letterSpacing = (-0.03).em))
+                    Spacer(Modifier.height(22.dp))
+                    Text("링크·송금은\n멈추세요.", color = ink,
+                        style = ansimStyle(50, 56, FontWeight.ExtraBold).copy(letterSpacing = (-0.02).em))
+                }
+            }
+            WarningPill(foreign?.retry ?: "다시 확인", onRetry, Color(0xFF121318), Color.White, 68.dp,
+                style = ansimStyle(19, 26, FontWeight.Bold), secondLine = if (foreign != null) "다시 확인" else null)
+            Spacer(Modifier.height(10.dp))
+            WarningPill(foreign?.sms ?: smsLabel, onSms, Color(0xFFFFE5A8), ink, 54.dp,
+                style = ansimStyle(19, 26, FontWeight.Bold), secondLine = if (foreign != null) "가족에게 문자보내기" else null)
+            Spacer(Modifier.height(6.dp))
+            WarningTextButton(if (foreign != null) "${foreign.close} · 닫기" else "닫기", onClose, ink.copy(alpha = .9f),
+                ansimStyle(17, 24, FontWeight.Bold))
+        }
+    }
+}
+
+/** 기호로 시작하던 버튼 문구를 시안 아이콘으로 바꿉니다. */
+private fun iconFor(label: String): Pair<androidx.compose.ui.graphics.vector.ImageVector?, String> = when {
+    label.startsWith("☎") -> AnsimIcons.Phone to label.drop(1).trim()
+    label.startsWith("↻") -> AnsimIcons.RotateCcw to label.drop(1).trim()
+    label.startsWith("🔊") -> AnsimIcons.Volume1 to label.removePrefix("🔊").trim()
+    label.startsWith("🚫") -> AnsimIcons.Ban to label.removePrefix("🚫").trim()
+    label.startsWith("⚑") -> AnsimIcons.Flag to label.drop(1).trim()
+    else -> null to label
+}
+
+/** 다국어(영어·중국어) 등 공통 경고 화면의 버튼. 시안 버튼과 같은 모양을 씁니다. */
 @Composable
 private fun WarningMainAction(label: String, color: Color, onClick: () -> Unit) {
-    Button(onClick = onClick,
-        modifier = Modifier.fillMaxWidth().height(if (label.contains('\n')) 66.dp else 52.dp),
-        shape = RoundedCornerShape(7.dp),
-        colors = ButtonDefaults.buttonColors(containerColor = color, contentColor = Color.White)) {
-        Text(label, fontWeight = FontWeight.Bold, fontSize = 15.sp,
-            maxLines = 2, lineHeight = 19.sp, textAlign = TextAlign.Center)
-    }
+    val (icon, text) = iconFor(label)
+    WarningPill(text, onClick, color, Color.White, if (text.contains('\n')) 66.dp else 56.dp, icon = icon,
+        style = ansimStyle(17, 23, FontWeight.Bold))
 }
 
 @Composable
 private fun WarningSecondaryAction(
     label: String, enabled: Boolean = true, onClick: () -> Unit
 ) {
-    OutlinedButton(onClick = onClick, enabled = enabled,
-        modifier = Modifier.fillMaxWidth().height(43.dp), shape = RoundedCornerShape(7.dp),
-        colors = ButtonDefaults.outlinedButtonColors(contentColor = AnsimInk)) {
-        Text(label, fontWeight = FontWeight.Medium, fontSize = 13.sp, maxLines = 1)
-    }
+    val (icon, text) = iconFor(label)
+    WarningOutline(text, onClick, 48.dp, icon = icon, enabled = enabled,
+        style = ansimStyle(15, 22, FontWeight.SemiBold))
 }
 
 @Composable
 private fun WarningTextAction(label: String, onClick: () -> Unit) {
-    TextButton(onClick = onClick, modifier = Modifier.fillMaxWidth().height(40.dp)) {
-        Text(label, color = AnsimMuted, fontSize = 14.sp)
-    }
+    WarningTextButton(label, onClick, AnsimMuted)
 }

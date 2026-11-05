@@ -17,8 +17,8 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import com.hackathon.ansimmessagepractice.navigation.openWarningDetails
-import com.hackathon.ansimmessagepractice.ui.onboarding.usesLargeText
-import com.hackathon.ansimmessagepractice.ui.onboarding.BIG_TEXT_FONT_MULTIPLIER
+import com.hackathon.ansimmessagepractice.ui.onboarding.largeTextScale
+import com.hackathon.ansimmessagepractice.ui.theme.DESIGN_FONT_SCALE
 import com.hackathon.ansimmessagepractice.ui.warning.vibrateSafely
 import com.hackathon.ansimmessagepractice.ui.warning.OverlaySpeech
 import com.hackathon.ansimmessagepractice.ui.warning.spokenAccessibilityEnabled
@@ -32,9 +32,9 @@ class WarningOverlay(private val context: Context) {
     // 오버레이는 Compose 바깥의 TextView이므로 글자 확대 설정을 별도로 적용합니다.
     private fun uiFontScale(): Float {
         val prefs = context.getSharedPreferences("ansim_settings", Context.MODE_PRIVATE)
-        val mode = prefs.getString("notification_type", "기본 알림")
+        val mode = prefs.getString("notification_type", "기본 알림").orEmpty()
         val role = prefs.getString("role", "protected")
-        return if (usesLargeText(mode, role)) BIG_TEXT_FONT_MULTIPLIER else 1f
+        return largeTextScale(mode, role)
     }
     private val checkingOverlay = CheckingOverlay(context)
     private fun dp(value: Int) = (value * density + 0.5f).toInt()
@@ -71,89 +71,107 @@ class WarningOverlay(private val context: Context) {
         val risk = riskLevel.lowercase()
         if (risk == "checking") { showChecking(); return false }
         dismissChecking()
-        if (risk !in setOf("danger", "caution") || !hasPermission()) return false
+        // 확인 지연(timeout)도 사용 중인 화면 위에 노란 카드로 알려 줍니다.
+        if (risk !in setOf("danger", "caution", "timeout") || !hasPermission()) return false
         dismiss()
         val prefs = context.getSharedPreferences("ansim_settings", Context.MODE_PRIVATE)
         val mode = prefs.getString("notification_type", "기본 알림").orEmpty()
         val language = prefs.getString("language", "한국어").orEmpty()
-        val copy = overlayCopy(risk, mode, language)
-        val red = Color.rgb(195, 35, 53)
-        val accent = if (risk == "danger") red else Color.rgb(170, 120, 29)
+        val copy = overlayCopy(risk, mode, language, scamType)
+        // 외국어 설정이면 머리줄·버튼도 '선택 언어 + 한국어'로 표시합니다.
+        val foreign = if (copy.bilingual) com.hackathon.ansimmessagepractice.ui.warning.foreignCopyForDisplayLanguage(language) else null
+        val danger = risk == "danger"
+        val red = Color.rgb(192, 38, 46)
+        val yellow = Color.rgb(255, 200, 61)
+        val ink = Color.rgb(25, 27, 33)
+        val accent = if (danger) red else yellow
+        fun size(designPx: Float) = designPx * DESIGN_FONT_SCALE
 
-        // 원본 앱을 가리는 스크림: 사기 링크를 실수로 누르는 것 방지.
-        val root = FrameLayout(context).apply {
-            setBackgroundColor(Color.argb(92, 22, 25, 30))
-            isClickable = true
-            setOnClickListener { }
-        }
+        // 최종 시안 17p: 화면을 어둡게 가리지 않고 위쪽 카드만 표시합니다(좌우 13dp, 위 17dp).
+        // 카드 바깥 터치는 아래 앱으로 그대로 전달됩니다.
+        val root = FrameLayout(context).apply { setPadding(dp(13), dp(17), dp(13), dp(18)) }
         val banner = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(0, 0, 0, dp(13))
-            background = shape(Color.WHITE, 12)
+            setPadding(0, 0, 0, dp(18))
+            background = shape(Color.WHITE, 16)
             clipToOutline = true
             elevation = dp(9).toFloat()
             isClickable = true
         }
-        root.addView(banner, FrameLayout.LayoutParams(-1, -2, Gravity.TOP).apply {
-            leftMargin = dp(16); rightMargin = dp(16); topMargin = dp(30)
-        })
+        root.addView(banner, FrameLayout.LayoutParams(-1, -2, Gravity.TOP))
         val kind = if (sourceApp == "kakao") "카카오톡" else "문자"
-        banner.addView(text(
-            if (risk == "danger") "⚠  위험 · 사기 의심 $kind" else "⚠  주의 · 사기 의심 $kind",
-            14f, Color.WHITE, true
-        ).apply {
-            setPadding(dp(16), dp(9), dp(16), dp(9))
+        val header = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(20), 0, dp(20), 0)
             setBackgroundColor(accent)
-        }, LinearLayout.LayoutParams(-1, -2))
+        }
+        header.addView(android.widget.ImageView(context).apply {
+            setImageResource(com.hackathon.ansimmessagepractice.R.drawable.ic_overlay_alert)
+            if (!danger) setColorFilter(ink)
+        }, LinearLayout.LayoutParams(dp(18), dp(18)).apply { rightMargin = dp(8) })
+        header.addView(text(
+            when {
+                risk == "timeout" && foreign != null -> "${foreign.timeoutEyebrow} · 확인 지연"
+                risk == "timeout" -> "확인 지연 · 안전 여부 확인 전"
+                foreign != null -> "${foreign.level(danger)} · ${if (danger) "위험" else "주의"} · 사기 의심 $kind"
+                danger -> "위험 · 사기 의심 $kind"
+                else -> "주의 · 사기 의심 $kind"
+            },
+            size(15f), if (danger) Color.WHITE else ink, true
+        ))
+        banner.addView(header, LinearLayout.LayoutParams(-1, dp(42)))
         banner.addView(text(copy.headline,
-            if (copy.hearing || copy.easy) 20f else 18f,
-            Color.rgb(27, 29, 35), true).apply {
-            setPadding(dp(17), dp(15), dp(17), dp(if (copy.guide.isBlank()) 14 else 5))
+            size(if (copy.hearing || copy.easy) 20f else 18f), ink, true).apply {
+            setPadding(dp(20), dp(18), dp(20), dp(if (copy.guide.isBlank()) 15 else 4))
+            if (Build.VERSION.SDK_INT >= 28) lineHeight = (dp(27) * uiFontScale()).toInt()
         }, LinearLayout.LayoutParams(-1, -2))
         if (copy.guide.isNotBlank()) {
-            banner.addView(text(copy.guide, 13f, Color.rgb(92, 99, 111)).apply {
-                setPadding(dp(17), 0, dp(17), dp(13))
+            banner.addView(text(copy.guide, size(14f), Color.rgb(76, 82, 92)).apply {
+                setPadding(dp(20), 0, dp(20), dp(14))
             }, LinearLayout.LayoutParams(-1, -2))
         }
         val buttons = LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(15), 0, dp(15), 0)
+            setPadding(dp(20), 0, dp(20), 0)
         }
-        fun add(label: String, primary: Boolean, clicked: () -> Unit) {
-            val button = text(label, 15f, if (primary) Color.WHITE else Color.rgb(28, 30, 37), true).apply {
+        fun add(label: String, primary: Boolean, weight: Float, clicked: () -> Unit) {
+            val button = text(label, size(if (label.contains('\n')) 14f else 17f),
+                if (primary) (if (danger) Color.WHITE else ink) else ink, true).apply {
                 gravity = Gravity.CENTER
-                background = if (primary) shape(accent, 6) else GradientDrawable().apply {
+                background = if (primary) shape(accent, 24) else GradientDrawable().apply {
                     setColor(Color.WHITE)
-                    cornerRadius = dp(6).toFloat()
-                    setStroke(dp(1), Color.rgb(222, 225, 231))
+                    cornerRadius = dp(24).toFloat()
+                    setStroke(dp(1), Color.rgb(220, 221, 225))
                 }
                 isClickable = true; isFocusable = true; contentDescription = label
                 setOnClickListener { clicked() }
             }
-            buttons.addView(button, LinearLayout.LayoutParams(0, dp(if (uiFontScale() > 1f) 52 else 43), 1f).apply {
+            val tall = label.contains('\n') || uiFontScale() > 1f
+            buttons.addView(button, LinearLayout.LayoutParams(0, dp(if (tall) 56 else 48), weight).apply {
                 rightMargin = if (primary) dp(6) else 0
                 leftMargin = if (primary) 0 else dp(6)
             })
         }
-        add("자세히 보기", true) {
+        add(foreign?.let { "${it.details}\n자세히 보기" } ?: "자세히 보기", true, 1.76f) {
             val opened = if (onDetails != null) runCatching { onDetails() }.isSuccess
             else openWarningDetails(context, risk, receivedMessage, senderLabel, sourceApp,
                 analysisReason, scamType, serverTitle, serverExplanation, serverAction,
                 serverEasySentence, serverLanguage)
             if (opened) dismiss() else Toast.makeText(context, "경고 상세를 열 수 없어요.", Toast.LENGTH_SHORT).show()
         }
-        add("닫기", false) { dismiss() }
+        add(foreign?.let { "${it.close}\n닫기" } ?: "닫기", false, 1f) { dismiss() }
         banner.addView(buttons)
 
         val params = WindowManager.LayoutParams(
-            -1, -1,
+            WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.WRAP_CONTENT,
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
                 WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
             else WindowManager.LayoutParams.TYPE_PHONE,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
             PixelFormat.TRANSLUCENT
-        ).apply { gravity = Gravity.CENTER }
+        ).apply { gravity = Gravity.TOP }
         // addView 성공한 경우에만 표시 성공으로 판단합니다.
         // TTS·진동 실패는 실제 경고창 표시 성공 여부에 영향을 주지 않습니다.
         try {
