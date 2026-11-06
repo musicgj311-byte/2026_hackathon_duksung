@@ -32,9 +32,11 @@ import androidx.lifecycle.LifecycleEventObserver
 import com.hackathon.ansimmessagepractice.ui.theme.*
 
 /**
- *  필수: 알림 읽기 · 다른 앱 위에 표시 · 경고 알림 표시(POST_NOTIFICATIONS)
- *  선택: 연락처 확인 · 배터리 최적화 제외
- *  연락처 권한이 있어야 '저장된 연락처' 판정(기기 1차 통과, 서버 is_contact 규칙)이 동작합니다.
+ * 최종 시안 5~6p. 시안에는 필수 2개로 그려져 있지만 실제로 필요한 필수 권한은 4개입니다.
+ *  필수: 알림 읽기 · 다른 앱 위에 표시 · 경고 알림 표시(POST_NOTIFICATIONS) · 연락처 확인
+ *  선택: 배터리 최적화 제외
+ *  연락처 권한이 없으면 발신자가 저장된 번호인지 알 수 없어, 모르는 번호의 문자를 서버 검사로 보내지 못합니다.
+ *  그래서 연락처도 필수로 두고, 4개가 모두 허용되어야 완료 화면(6p)으로 바뀝니다.
  */
 @Composable
 fun PermissionScreen(onNextClick: () -> Unit, onBackClick: () -> Unit,
@@ -50,8 +52,11 @@ fun PermissionScreen(onNextClick: () -> Unit, onBackClick: () -> Unit,
         postNotifications = PermissionStatus.postNotifications(context)
         if (!granted) LockScreenSettings.open(context)
     }
+    // 한 번 거부한 뒤 다시 누르면 시스템 창이 뜨지 않을 수 있어, 두 번째부터는 앱 설정 화면을 엽니다.
+    var contactsAsked by remember { mutableStateOf(false) }
     val contactsRequest = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
         contacts = PermissionStatus.contacts(context)
+        contactsAsked = true
     }
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
@@ -77,7 +82,18 @@ fun PermissionScreen(onNextClick: () -> Unit, onBackClick: () -> Unit,
         if (denied) postPermissionRequest.launch(Manifest.permission.POST_NOTIFICATIONS)
         else LockScreenSettings.open(context)
     }
-    val ready = notification && overlay && postNotifications
+    fun requestContacts() {
+        if (contacts) return
+        if (!contactsAsked) contactsRequest.launch(Manifest.permission.READ_CONTACTS)
+        else runCatching {
+            context.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                Uri.parse("package:${context.packageName}")))
+        }.onFailure {
+            android.widget.Toast.makeText(context, "휴대폰 설정 > 애플리케이션 > 모두안심 > 권한에서 연락처를 허용해 주세요.",
+                android.widget.Toast.LENGTH_LONG).show()
+        }
+    }
+    val ready = notification && overlay && postNotifications && contacts
 
     if (fromSettings) {
         // 설정 > 권한: 시안 단계 표시 대신 상단 바를 쓰고, 모든 권한 상태를 한 목록에서 보여줍니다.
@@ -96,11 +112,9 @@ fun PermissionScreen(onNextClick: () -> Unit, onBackClick: () -> Unit,
                     open(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:${context.packageName}")))
                 }
                 PermissionLine("경고 알림 표시", "잠금 화면에서도 위험을 알려드려요", true, postNotifications) { requestPost() }
+                PermissionLine("연락처 확인", "모르는 번호의 문자를 골라 검사해요", true, contacts) { requestContacts() }
                 PermissionLine("배터리 최적화 제외", "앱이 꺼지지 않게 해요", false, battery) {
                     open(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
-                }
-                PermissionLine("연락처 확인", "저장된 번호를 구분해 더 정확하게 검사해요", false, contacts) {
-                    if (!contacts) contactsRequest.launch(Manifest.permission.READ_CONTACTS)
                 }
             }
             Box(Modifier.padding(start = 24.dp, end = 24.dp, bottom = 32.dp, top = 12.dp)) {
@@ -120,7 +134,7 @@ fun PermissionScreen(onNextClick: () -> Unit, onBackClick: () -> Unit,
             Text("필수 권한이\n모두 허용되었어요", style = AnsimType.Title, color = AnsimInk)
             Spacer(Modifier.height(26.dp))
             HorizontalDivider(color = AnsimDivider, thickness = 1.dp)
-            listOf("알림 읽기", "다른 앱 위에 표시", "경고 알림 표시").forEach { title ->
+            listOf("알림 읽기", "다른 앱 위에 표시", "경고 알림 표시", "연락처 확인").forEach { title ->
                 Row(Modifier.fillMaxWidth().heightIn(min = 52.dp), verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween) {
                     Text(title, style = AnsimType.Row, color = AnsimInk)
@@ -128,8 +142,12 @@ fun PermissionScreen(onNextClick: () -> Unit, onBackClick: () -> Unit,
                 }
                 HorizontalDivider(color = AnsimDivider, thickness = 1.dp)
             }
+            // 선택 권한(배터리)은 완료 화면에서도 계속 허용할 수 있게 남겨 둡니다.
+            if (!battery) PermissionLine("배터리 최적화 제외", "앱이 꺼지지 않게 해요", false, battery) {
+                open(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
+            }
             Spacer(Modifier.height(23.dp))
-            Text("연락처·배터리 설정은 선택 사항이에요. 설정 메뉴에서 언제든 바꿀 수 있어요.",
+            Text("배터리 설정은 선택 사항이에요. 설정 메뉴에서 언제든 바꿀 수 있어요.",
                 style = AnsimType.BodyLong, color = AnsimMuted)
         }
         return
@@ -146,7 +164,7 @@ fun PermissionScreen(onNextClick: () -> Unit, onBackClick: () -> Unit,
     }) {
         OnboardingStepHeader(3, onBackClick)
         Spacer(Modifier.height(22.dp))
-        AnsimHeading("필수 권한 3가지를\n허용해 주세요", "문자를 확인하고 경고를 띄우는 데 필요해요.")
+        AnsimHeading("필수 권한 4가지를\n허용해 주세요", "문자를 확인하고 경고를 띄우는 데 필요해요.")
         Spacer(Modifier.height(27.dp))
         HorizontalDivider(color = AnsimDivider, thickness = 1.dp)
         PermissionLine("알림 읽기", "문자·카톡이 오면 바로 확인해요", true, notification) {
@@ -156,9 +174,7 @@ fun PermissionScreen(onNextClick: () -> Unit, onBackClick: () -> Unit,
             open(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:${context.packageName}")))
         }
         PermissionLine("경고 알림 표시", "잠금 화면에서도 위험을 알려드려요", true, postNotifications) { requestPost() }
-        PermissionLine("연락처 확인", "저장된 번호를 구분해 더 정확하게 검사해요", false, contacts) {
-            if (!contacts) contactsRequest.launch(Manifest.permission.READ_CONTACTS)
-        }
+        PermissionLine("연락처 확인", "모르는 번호의 문자를 골라 검사해요", true, contacts) { requestContacts() }
         PermissionLine("배터리 최적화 제외", "앱이 꺼지지 않게 해요", false, battery) {
             open(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
         }
