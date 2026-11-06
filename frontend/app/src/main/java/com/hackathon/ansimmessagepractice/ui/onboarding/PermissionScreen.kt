@@ -33,7 +33,8 @@ import com.hackathon.ansimmessagepractice.ui.theme.*
 
 /**
  *  필수: 알림 읽기 · 다른 앱 위에 표시 · 경고 알림 표시(POST_NOTIFICATIONS)
- *  선택: 배터리 최적화 제외 (설정에서 들어온 경우에만 연락처 확인도 함께 표시)
+ *  선택: 연락처 확인 · 배터리 최적화 제외
+ *  연락처 권한이 있어야 '저장된 연락처' 판정(기기 1차 통과, 서버 is_contact 규칙)이 동작합니다.
  */
 @Composable
 fun PermissionScreen(onNextClick: () -> Unit, onBackClick: () -> Unit,
@@ -109,7 +110,8 @@ fun PermissionScreen(onNextClick: () -> Unit, onBackClick: () -> Unit,
         return
     }
 
-    if (ready) { // 완료 화면
+    if (ready) {
+        // 완료 화면
         OnboardingPage(bottom = { AnsimPrimaryButton("다음", onNextClick) }) {
             OnboardingStepHeader(3, onBackClick)
             Spacer(Modifier.height(47.dp))
@@ -127,7 +129,7 @@ fun PermissionScreen(onNextClick: () -> Unit, onBackClick: () -> Unit,
                 HorizontalDivider(color = AnsimDivider, thickness = 1.dp)
             }
             Spacer(Modifier.height(23.dp))
-            Text("배터리 설정은 선택 사항이에요. 설정 메뉴에서 언제든 바꿀 수 있어요.",
+            Text("연락처·배터리 설정은 선택 사항이에요. 설정 메뉴에서 언제든 바꿀 수 있어요.",
                 style = AnsimType.BodyLong, color = AnsimMuted)
         }
         return
@@ -154,6 +156,9 @@ fun PermissionScreen(onNextClick: () -> Unit, onBackClick: () -> Unit,
             open(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:${context.packageName}")))
         }
         PermissionLine("경고 알림 표시", "잠금 화면에서도 위험을 알려드려요", true, postNotifications) { requestPost() }
+        PermissionLine("연락처 확인", "저장된 번호를 구분해 더 정확하게 검사해요", false, contacts) {
+            if (!contacts) contactsRequest.launch(Manifest.permission.READ_CONTACTS)
+        }
         PermissionLine("배터리 최적화 제외", "앱이 꺼지지 않게 해요", false, battery) {
             open(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
         }
@@ -187,7 +192,7 @@ private fun PermissionLine(title: String, detail: String, required: Boolean,
                 contentAlignment = Alignment.Center) {
                 Text("허용하기", style = ansimStyle(15, 22, FontWeight.Bold), color = Color.White)
             }
-            // 선택 권한은 파란 밑줄 '나중에'로 표시하고, 누르면 해당 설정을 엽니다.
+            // 선택 권한은 시안처럼 파란 밑줄 '나중에'로 표시하고, 누르면 해당 설정을 엽니다.
             else -> Text("나중에", Modifier.clickable(role = Role.Button, onClick = onClick).padding(vertical = 8.dp),
                 style = ansimStyle(15, 22, FontWeight.SemiBold), color = AnsimBlue,
                 textDecoration = TextDecoration.Underline)
