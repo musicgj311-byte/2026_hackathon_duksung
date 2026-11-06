@@ -1,0 +1,9 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <!-- Blue-and-white envelope emblem matching the design proposal. -->
+    <path android:fillColor="#FFFFFF"
+        android:pathData="M30,39 C30,36.5 32,35 34.5,35 L73.5,35 C76,35 78,37 78,39.5 L78,68.5 C78,71 76,73 73.5,73 L34.5,73 C32,73 30,71 30,68.5 Z"/>
+    <path android:fillColor="#2053A0" android:pathData="M34,42 L54,57 L74,42 L74,47 L54,62 L34,47 Z"/>
+    <path android:fillColor="#2053A0" android:pathData="M45,57 L52,63 L65,49 L68,52 L52,69 L42,60 Z"/>
+</vector>
