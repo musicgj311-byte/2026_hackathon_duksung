@@ -207,10 +207,17 @@ private fun DemoApprovalRow(label: String, value: String) {
 
 /** 최종 시안 11p 연결 완료: 체크 아이콘 · 제목 · 아이콘 3줄 · 홈으로 */
 @Composable
-fun GuardianConnectedScreen(onHome: () -> Unit, demo: Boolean = false) {
+fun GuardianConnectedScreen(onHome: () -> Unit, demo: Boolean = false, onEnterInfo: (() -> Unit)? = null) {
     val guardianName = DemoPairing.GUARDIAN_NAME.substringBefore(" (")
     val title = if (demo) "$guardianName 님과\n연결되었어요" else "가족과\n연결되었어요"
-    OnboardingPage(bottom = { AnsimPrimaryButton("홈으로", onHome) }) {
+    // 실제 서버 연결은 보호자의 이름·번호를 알려주지 않으므로, 피보호자 휴대폰에서 바로 이어서 입력받습니다.
+    OnboardingPage(bottom = {
+        if (onEnterInfo != null) {
+            AnsimPrimaryButton("보호자 정보 입력하기", onEnterInfo)
+            Spacer(Modifier.height(15.dp))
+            AnsimTextLink("나중에 입력할게요", onHome)
+        } else AnsimPrimaryButton("홈으로", onHome)
+    }) {
         Spacer(Modifier.height(52.dp))
         AnsimIcon(AnsimIcons.CircleCheck, AnsimProtected, 44.dp)
         Spacer(Modifier.height(20.dp))
@@ -229,6 +236,8 @@ fun GuardianConnectedScreen(onHome: () -> Unit, demo: Boolean = false) {
             }
             HorizontalDivider(color = AnsimDivider, thickness = 1.dp)
         }
+        if (onEnterInfo != null) Text("경고 화면의 전화 버튼에 쓸 보호자 이름과 번호를 입력해 주세요.",
+            Modifier.padding(top = 15.dp), style = AnsimType.BodyLong, color = AnsimMuted)
         if (demo && DemoPairing.SHOW_DEMO_NOTICES) Text("화면 시연만 완료했어요. 실제 보호자 연결 및 알림은 아직 아닙니다.",
             Modifier.padding(top = 15.dp), style = AnsimType.Body, color = AnsimCaution)
     }

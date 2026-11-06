@@ -63,6 +63,8 @@ fun AnsimApp(
     var selectedAlert by remember { mutableStateOf<AlertRecord?>(null) }
     var selectedGuardianAlert by remember { mutableStateOf<GuardianNotificationRecord?>(null) }
     var guardianFromHome by remember { mutableStateOf(false) }
+    // 연결 완료 화면에서 '보호자 정보 입력하기'로 들어온 경우 (뒤로 가면 연결 완료 화면으로)
+    var guardianInfoAfterPair by remember { mutableStateOf(false) }
     // 홈·보호자 관리·경고 화면에서 연결 코드 화면(7p)을 연 경우 온보딩이 아닌 홈으로 돌아갑니다.
     var protectedPairFromHome by remember { mutableStateOf(false) }
     fun openProtectedPairFromHome() { protectedPairFromHome = true; currentScreen = "protected_pair" }
@@ -163,7 +165,7 @@ fun AnsimApp(
         "demo_approval" -> if (currentRole == "guardian") "demo_guardian_wait" else "protected_pair"
         "demo_guardian_wait" -> "guardian_pair"
         "guardian_connected_success" -> if (currentRole == "guardian") "guardian_home" else "home"
-        "guardian" -> if (guardianFromHome) "guardian_manage" else "language"
+        "guardian" -> if (guardianFromHome) "guardian_manage" else if (guardianInfoAfterPair) "guardian_connected_success" else "language"
         "guardian_manage" -> "home"
         "settings", "alert_detail" -> "home"
         "guardian_preview" -> guardianPreviewReturnTo
@@ -265,8 +267,14 @@ fun AnsimApp(
                 onConnected = { currentScreen = "guardian_connected_success" }
             )
             "guardian_connected_success" -> com.hackathon.ansimmessagepractice.guardian.GuardianConnectedScreen(
-                onHome = { finishSetup() },
-                demo = DemoPairing.enabled(context)
+                onHome = { guardianInfoAfterPair = false; finishSetup() },
+                demo = DemoPairing.enabled(context),
+                // 실제 연결 + 피보호자 + 아직 보호자 번호가 없을 때만 정보 입력으로 이어집니다.
+                onEnterInfo = if (!DemoPairing.enabled(context) && currentRole == "protected" &&
+                    !com.hackathon.ansimmessagepractice.guardian.GuardianCall.validNumber(
+                        com.hackathon.ansimmessagepractice.guardian.GuardianCall.savedNumber(context))) {
+                    { guardianFromHome = false; guardianInfoAfterPair = true; currentScreen = "guardian" }
+                } else null
             )
             "select" -> UserTypeScreen(selectedType, { selectedType = it },
                 onNextClick = { currentScreen = "language" }, onBackClick = { currentScreen = "role_select" })
@@ -279,8 +287,14 @@ fun AnsimApp(
                 onBackClick = { currentScreen = permissionsReturnTo }, fromSettings = true
             )
             "guardian" -> GuardianScreen(
-                onSkipClick = { if (guardianFromHome) currentScreen = "guardian_manage" else finishSetup() },
-                onBackClick = { currentScreen = if (guardianFromHome) "guardian_manage" else "language" },
+                onSkipClick = {
+                    if (guardianFromHome) currentScreen = "guardian_manage"
+                    else { guardianInfoAfterPair = false; finishSetup() }
+                },
+                onBackClick = {
+                    currentScreen = if (guardianFromHome) "guardian_manage"
+                    else if (guardianInfoAfterPair) "guardian_connected_success" else "language"
+                },
                 fromHome = guardianFromHome
             )
             "guardian_manage" -> GuardianManageScreen(

@@ -18,10 +18,11 @@ import com.hackathon.ansimmessagepractice.ui.onboarding.AnsimOutlineButton
 import com.hackathon.ansimmessagepractice.ui.onboarding.AnsimPrimaryButton
 import com.hackathon.ansimmessagepractice.ui.onboarding.AnsimTopBar
 import com.hackathon.ansimmessagepractice.ui.theme.*
+import kotlinx.coroutines.launch
 import java.util.Calendar
 
 /**
- * '보호자 관리' + 연결 해제 하단 시트.
+ * 최종 시안 15p '보호자 관리' + 연결 해제 하단 시트.
  * 시연 연결(DemoPairing)과 이 휴대폰에 저장한 전화번호를 구분해서 표시합니다.
  * 저장한 번호만 있는 경우 '연결 해제'는 이 휴대폰의 번호만 지우며 서버 연결은 건드리지 않습니다.
  */
@@ -34,13 +35,27 @@ fun GuardianManageScreen(onBack: () -> Unit, onEdit: () -> Unit) {
     var relation by remember { mutableStateOf(prefs.getString("guardian_relationship", "").orEmpty()) }
     var savedAt by remember { mutableLongStateOf(prefs.getLong("guardian_contact_saved_at", 0L)) }
     var demoLinked by remember { mutableStateOf(DemoPairing.approved(context)) }
+    // 실제 서버 연결 여부(홈·연결 코드 화면에서 확인해 저장한 값)
+    var serverLinked by remember {
+        mutableStateOf(!DemoPairing.enabled(context) && prefs.getBoolean("server_guardian_linked", false))
+    }
     var confirming by remember { mutableStateOf(false) }
+    var busy by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf("") }
+    val scope = rememberCoroutineScope()
     val hasPhone = GuardianCall.validNumber(phone)
-    val hasGuardian = hasPhone || demoLinked
+    val hasGuardian = hasPhone || demoLinked || serverLinked
 
-    val displayName = if (hasPhone) name.ifBlank { "가족" } + if (relation.isNotBlank()) " ($relation)" else ""
-    else DemoPairing.GUARDIAN_NAME
-    val displayPhone = if (hasPhone) formatGuardianPhone(phone) else DemoPairing.GUARDIAN_PHONE
+    val displayName = when {
+        hasPhone -> name.ifBlank { "가족" } + if (relation.isNotBlank()) " ($relation)" else ""
+        serverLinked -> "연결된 보호자"
+        else -> DemoPairing.GUARDIAN_NAME
+    }
+    val displayPhone = when {
+        hasPhone -> formatGuardianPhone(phone)
+        serverLinked -> "미등록"
+        else -> DemoPairing.GUARDIAN_PHONE
+    }
     val linkedAt = if (hasPhone) savedAt else DemoPairing.approvedAt(context)
 
     Box(Modifier.fillMaxSize()) {
@@ -52,9 +67,12 @@ fun GuardianManageScreen(onBack: () -> Unit, onEdit: () -> Unit) {
                     HorizontalDivider(color = AnsimInk, thickness = 2.dp)
                     ContactInfo("이름", displayName)
                     ContactInfo("전화번호", displayPhone)
-                    ContactInfo(if (hasPhone) "등록일" else "연결일", formatKoreanDate(linkedAt))
+                    if (hasPhone || demoLinked) ContactInfo(if (hasPhone) "등록일" else "연결일", formatKoreanDate(linkedAt))
+                    if (serverLinked && !hasPhone) Text("경고 화면에서 바로 전화하려면 보호자 이름과 번호를 입력해 주세요.",
+                        Modifier.padding(top = 12.dp), style = AnsimType.BodyLong, color = AnsimMuted)
                     Spacer(Modifier.height(16.dp))
-                    AnsimOutlineButton("보호자 변경", onEdit, height = 52.dp)
+                    if (serverLinked && !hasPhone) AnsimPrimaryButton("보호자 정보 입력", onEdit, height = 52.dp)
+                    else AnsimOutlineButton(if (serverLinked) "보호자 정보 수정" else "보호자 변경", onEdit, height = 52.dp)
                     Spacer(Modifier.height(16.dp))
                     AnsimOutlineButton("연결 해제", { confirming = true }, textColor = AnsimDangerText, height = 52.dp)
                 } else {
@@ -70,24 +88,45 @@ fun GuardianManageScreen(onBack: () -> Unit, onEdit: () -> Unit) {
         if (confirming) AnsimBottomSheet(onDismiss = { confirming = false }) {
             Text("보호자 연결을 해제할까요?", style = ansimStyle(20, 28, FontWeight.Bold), color = AnsimInk)
             Spacer(Modifier.height(10.dp))
-            Text(if (hasPhone) "이 휴대폰에 저장된 보호자 번호가 지워지고, 경고 화면에서 바로 전화할 수 없어요."
-            else "해제하면 위험 문자 알림이 전송되지 않고, 경고 화면에서 바로 전화할 수 없어요.",
-                style = AnsimType.BodyLong, color = AnsimMuted)
+            Text(when {
+                serverLinked -> "해제하면 보호자에게 위험 문자 알림이 전송되지 않고, 저장된 보호자 번호도 지워져요."
+                hasPhone -> "이 휴대폰에 저장된 보호자 번호가 지워지고, 경고 화면에서 바로 전화할 수 없어요."
+                else -> "해제하면 위험 문자 알림이 전송되지 않고, 경고 화면에서 바로 전화할 수 없어요."
+            }, style = AnsimType.BodyLong, color = AnsimMuted)
+            if (error.isNotBlank()) Text(error, Modifier.padding(top = 10.dp), style = AnsimType.Body, color = AnsimDangerText)
             Spacer(Modifier.height(20.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 AnsimOutlineButton("취소", { confirming = false }, Modifier.weight(1f), height = 52.dp)
-                AnsimPrimaryButton("해제", {
-                    if (hasPhone) {
+                AnsimPrimaryButton(if (busy) "해제 중…" else "해제", {
+                    fun clearLocal() {
                         prefs.edit().remove("guardian_name").remove("guardian_phone")
                             .remove("guardian_relationship").remove("guardian_contact_saved_at").apply()
                         name = ""; phone = ""; relation = ""; savedAt = 0L
-                    } else {
-                        DemoPairing.clear(context)
-                        demoLinked = false
                     }
-                    confirming = false
+                    if (busy) return@AnsimPrimaryButton
+                    if (serverLinked) {
+                        // 서버에 연결된 모든 보호자와의 연결을 끊은 뒤 이 휴대폰의 번호도 지웁니다.
+                        busy = true; error = ""
+                        scope.launch {
+                            val protectedId = AnsimDeviceId.value(context, "protected")
+                            runCatching {
+                                PairingIntegration.backend.connectedGuardianIds(protectedId).forEach { guardianId ->
+                                    PairingIntegration.backend.unlinkGuardian(protectedId, guardianId)
+                                }
+                            }.onSuccess {
+                                prefs.edit().putBoolean("server_guardian_linked", false).apply()
+                                serverLinked = false
+                                clearLocal()
+                                confirming = false
+                            }.onFailure { error = "연결을 해제하지 못했어요. 인터넷 연결을 확인하고 다시 시도해 주세요." }
+                            busy = false
+                        }
+                    } else {
+                        if (hasPhone) clearLocal() else { DemoPairing.clear(context); demoLinked = false }
+                        confirming = false
+                    }
                 }, modifier = Modifier.weight(1f), container = AnsimDanger, height = 52.dp,
-                    textStyle = AnsimType.ButtonSmall)
+                    textStyle = AnsimType.ButtonSmall, enabled = !busy)
             }
         }
     }

@@ -36,6 +36,8 @@ fun GuardianScreen(onSkipClick: () -> Unit, onBackClick: () -> Unit, fromHome: B
     var showPairing by remember { mutableStateOf(false) }
     val cleanPhone = GuardianCall.cleanNumber(phone)
     val valid = name.isNotBlank() && GuardianCall.validNumber(cleanPhone)
+    // 보호자 앱과 서버로 이미 연결된 경우(연결 완료 화면·보호자 관리에서 들어옴)
+    val serverLinked = remember(context) { prefs.getBoolean("server_guardian_linked", false) }
 
     Column(Modifier.fillMaxSize().background(Color.White).statusBarsPadding().navigationBarsPadding()
         .padding(horizontal = 25.dp, vertical = 17.dp)) {
@@ -66,9 +68,10 @@ fun GuardianScreen(onSkipClick: () -> Unit, onBackClick: () -> Unit, fromHome: B
                         label = { Text("전화번호") }, placeholder = { Text("010-1234-5678") },
                         singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                         modifier = Modifier.fillMaxWidth())
-                    Text("이 전화번호는 기기에만 저장돼요. 보호자에게 자동으로 위험 알림을 보내려면 별도의 서버 연결이 필요해요.",
+                    Text(if (serverLinked) "이 전화번호는 이 휴대폰에만 저장되고, 경고 화면의 전화 버튼에 쓰여요."
+                    else "이 전화번호는 기기에만 저장돼요. 보호자에게 자동으로 위험 알림을 보내려면 별도의 서버 연결이 필요해요.",
                         color = AnsimMuted, fontSize = 12.sp, lineHeight = 20.sp)
-                    if (PairingIntegration.isConfigured) {
+                    if (PairingIntegration.isConfigured && !serverLinked) {
                         TextButton(onClick = { showPairing = !showPairing }) {
                             Text(if (showPairing) "연결 코드 발급 닫기" else "보호자 앱 연결 코드 발급", color = AnsimGreen)
                         }
@@ -116,7 +119,8 @@ fun GuardianScreen(onSkipClick: () -> Unit, onBackClick: () -> Unit, fromHome: B
                     Spacer(Modifier.height(23.dp))
                     HorizontalDivider(color = Color(0xFFEDF0F2))
                     GuardianSuccessRow(AnsimIcons.Phone, "경고 화면에서 버튼 하나로 전화할 수 있어요")
-                    GuardianSuccessRow(AnsimIcons.Bell, "서버 연결이 완료되기 전에는 보호자 알림이 전송되지 않아요")
+                    GuardianSuccessRow(AnsimIcons.Bell, if (serverLinked) "위험 문자가 오면 보호자에게 알림이 전송돼요"
+                    else "서버 연결이 완료되기 전에는 보호자 알림이 전송되지 않아요")
                     GuardianSuccessRow(AnsimIcons.Lock, "받은 문자 원문은 보호자에게 전송하지 않아요")
                 }
                 Spacer(Modifier.height(12.dp))
