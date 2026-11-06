@@ -11,11 +11,6 @@
 - 📄 [프로젝트 발표 자료 PDF 바로 보기](docs/지키미팀_모두안심.pdf)
 - 🎬 [프로젝트 시연 영상 보러 가기](여기에_시연영상_URL)
 
-
-
-
-
-
 <br>
 
 ## 1. 프로젝트 목적
@@ -65,7 +60,7 @@
    │
 ② 서버 · 빠른 신호 ── 단축 URL 해제 → Safe Browsing · VirusTotal · 차단 목록 · 도메인 생성일
    │                    └ 악성 목록에 있으면 즉시 '위험' 확정
-③ LLM 판단 ── 애매한 문자만 Gemini가 문장의 의도를 판단 (5초 초과 시 '주의')
+③ LLM 판단 ── 애매한 문자만 Gemini가 문장의 의도를 판단 (최대 10초, 넘으면 규칙 결과로 판정)
    │
 ④ 최종 판정 ── 위험 / 주의 / 안전해 보임
    │
@@ -80,25 +75,27 @@
 - 기기 → 서버 → LLM으로 이어지는 단계별 판정
 - 링크 없이 문자 속 번호로 전화를 유도하는 수법 감지 (카드 발급·해외결제 사칭 등)
 - 글자를 깨뜨려 키워드를 피하는 문자(예: "자,,금")는 LLM이 의도로 판단
-- 저장된 연락처라도 송금을 요구하면 계정 도용 가능성이 있어 최대 '주의'로 안내
+- 저장된 연락처가 보낸 문자는 평소 대화일 수 있어 최대 '주의'로 안내하고 원래 번호로 확인하게 함 (단, 악성 링크 목록에 걸리면 계정 탈취 가능성이 있어 '위험')
 - '안전'이라고 단정하지 않고, 문제가 없어 보이면 표시 없이 확인 카드만 닫음
 
 ### 사용자 맞춤 경고 (Android)
-- 처음 설정: 역할(보호 대상자·보호자) → 알림 방식 → 언어 → 필수 권한
+- 처음 설정: 역할(보호 대상자·보호자) → 알림 방식 → 언어 → 필수 권한 4개 → 보호자 연결
 - 알림 방식
-  - 큰 글씨와 소리 (어르신 기본)
-  - 화면과 진동 (청각장애인)
-  - 단순한 안내 (발달장애인)
-  - 소리 중심 (시각장애인)
+  - 기본 알림: 큰 글씨와 소리 (어르신, 기본값)
+  - 화면 안내 중심: 화면과 진동 (청각장애인)
+  - 쉬운 안내: 그림과 짧은 문장 (발달장애인)
+  - 음성 안내 중심: 자동 음성 안내 (시각장애인)
 - 다국어 경고: 한국어 · English · Tiếng Việt · 中文
 - 다른 앱 사용 중에는 그 앱 위에 경고, 화면 잠금 상태에서는 잠금화면 알림 후 전체 경고
-- 링크가 있는 문자는 판정 전에 "확인 중, 누르지 마세요"를 먼저 표시
+- 서버 판정이 필요한 문자는 결과가 나오기 전에 "확인 중, 누르지 마세요"를 먼저 표시
+- 서버 응답이 늦거나 실패하면 '안전'으로 처리하지 않고 '확인 지연' 경고를 표시
 - 가족에게 전화하기: 보호자 번호가 입력된 기본 전화 앱을 열어 줌 (전화 권한 불필요)
 
 ### 보호자 연결
 - 6자리 일회용 연결 코드 발급 (발급 후 10분 유효)
-- 보호자가 코드를 입력하면 보호 대상자와 연결
-- 연결 해제 API
+- 보호자가 코드를 입력하면 보호 대상자와 연결, 보호 대상자 화면도 자동으로 연결 완료로 넘어감
+- 연결 후 보호 대상자 휴대폰에 보호자 이름·관계·전화번호 입력 (경고 화면의 전화 버튼에 사용)
+- 연결 해제 (보호 대상자·보호자 양쪽에서 가능)
 
 ### 보호자 알림
 - 위험 판정일 때만 FCM 푸시 알림 발송
@@ -128,8 +125,8 @@
 
 **1) 저장소 받기**
 ```bash
-git clone https://github.com/<organization>/<repository>.git
-cd <repository>/<server-folder>
+git clone https://github.com/musicgj311-byte/2026_hackathon_duksung.git
+cd 2026_hackathon_duksung/backend
 ```
 
 **2) 의존성 설치** ([uv](https://docs.astral.sh/uv/) 필요)
@@ -144,33 +141,38 @@ uv sync
 cp .env.example .env
 ```
 ```env
-GEMINI_API_KEY=<Gemini API 키>
+LLM_API_KEY=<Gemini API 키>
 SAFE_BROWSING_API_KEY=<Google Safe Browsing API 키>
 VIRUSTOTAL_API_KEY=<VirusTotal API 키>
-FIREBASE_CREDENTIALS=<Firebase 서비스 계정 JSON 경로>
-DATABASE_URL=sqlite:///./data/app.db
+FIREBASE_CREDENTIALS_PATH=<Firebase 서비스 계정 JSON 경로>
+USE_FAKE_JUDGE=false
 ```
+
+- `USE_FAKE_JUDGE`의 기본값은 `true`(고정된 가짜 판정)입니다. 실제 판정을 받으려면 `false`로 바꿔야 합니다.
+- DB는 기본적으로 `backend/shield.db`에 저장됩니다. 다른 위치를 쓰려면 환경변수 `DATABASE_PATH`를 지정합니다(예: Railway Volume 경로).
+- 전체 환경변수와 테스트 방법은 [backend/README.md](backend/README.md)에 있습니다.
 
 
 **4) 서버 실행**
 ```bash
-uv run uvicorn <app.main>:app --reload
+uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 실행 후 `http://localhost:8000/docs`에서 API 문서를 확인할 수 있습니다.
 
 ### Android 앱
 
-1. Android Studio에서 `<android-folder>` 폴더를 엽니다.
-2. Firebase 콘솔에서 받은 `google-services.json`을 `app/` 폴더에 넣습니다.
-3. 서버 주소를 설정합니다. (로컬: `http://10.0.2.2:8000`, 배포: Railway 주소)
-4. 기기 또는 에뮬레이터에서 실행합니다.
-5. 처음 실행 시 **알림 읽기 · 다른 앱 위에 표시 · 경고 알림 표시** 권한을 허용합니다.
+1. Android Studio에서 `frontend` 폴더를 엽니다.
+2. `frontend/app/src/main/java/com/hackathon/ansimmessagepractice/data/api/BackendApi.kt`의 `SERVER_URL`에 서버 주소를 넣습니다. (에뮬레이터 + 로컬 서버: `http://10.0.2.2:8000`, 배포: Railway HTTPS 주소)
+3. 기기 또는 에뮬레이터에서 실행합니다.
+4. 처음 실행 시 **알림 읽기 · 다른 앱 위에 표시 · 경고 알림 표시 · 연락처 확인** 권한 4개를 허용합니다.
+
+앱 화면 구성과 시연 설정은 [frontend/README.md](frontend/README.md)에 정리되어 있습니다.
 
 ### 배포 (Railway)
 
 1. Railway에서 새 프로젝트를 만들고 GitHub 레포를 연결합니다.
 2. Variables에 `.env`와 같은 환경변수를 등록합니다.
-3. Volume을 추가하고 SQLite 파일 경로(예: `/app/data`)에 마운트합니다.
+3. Volume을 추가해 마운트하고(예: `/app/data`), 환경변수 `DATABASE_PATH`를 그 안의 파일 경로(예: `/app/data/shield.db`)로 지정합니다.
 4. 배포가 끝나면 발급된 HTTPS 주소를 앱의 서버 주소로 설정합니다.
 
 <br>
