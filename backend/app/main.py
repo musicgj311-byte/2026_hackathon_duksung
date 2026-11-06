@@ -8,12 +8,14 @@ from app.database import create_db_and_tables
 from app.guardian.router import router as guardian_router
 from app.judge.router import router as judge_router
 from app.user.router import router as user_router
+from app.incident.router import router as incident_router
 from app import models #SQLModel import를 위해 models.py를 import
+from app.firebase import initialize_firebase
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # 서버가 시작될 때 데이터베이스와 테이블 생성
     create_db_and_tables()
+    initialize_firebase()
     yield
 
 app = FastAPI(title="사기문자 방패 API", version="0.1.0", lifespan=lifespan)
@@ -24,6 +26,7 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], all
 app.include_router(judge_router)
 app.include_router(guardian_router)
 app.include_router(user_router)
+app.include_router(incident_router)
 
 
 @app.get("/health")

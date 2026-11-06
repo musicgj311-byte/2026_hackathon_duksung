@@ -1,15 +1,23 @@
 """판정 API (백엔드 1 담당).
 
-Day 1~2: USE_FAKE_JUDGE=true 이면 키워드만 보고 고정된 가짜 응답을 돌려줍니다.
-프론트 1은 이 응답으로 먼저 연결 작업을 하고, Day 3에 실제 판정으로 교체합니다.
+USE_FAKE_JUDGE=true  : 키워드만 보고 고정된 가짜 응답 (프론트 연결 확인용)
+USE_FAKE_JUDGE=false : 캐스케이드 ②~④ 실제 판정 (cascade.run)
+어느 쪽이든 '위험'이면 보호자 알림 함수를 호출합니다.
 """
 
 import re
 import time
 
-from fastapi import APIRouter
+from fastapi import APIRouter, BackgroundTasks
+from pydantic import BaseModel, Field
+from sqlmodel import Session
 
 from app.config import settings
+from app.database import engine
+from app.guardian.router import notify_guardians
+from app.judge import cascade
+from app.judge.signals import collect_fast_signals
+from app.models import ScamIncident
 from app.schemas import JudgeRequest, JudgeResponse, Level, ScamType
 
 router = APIRouter(tags=["judge"])
@@ -63,9 +71,45 @@ def fake_judge(req: JudgeRequest) -> JudgeResponse:
     )
 
 
+class SignalsRequest(BaseModel):
+    text: str = Field(..., min_length=1, max_length=2000)
+
+
+@router.post("/judge/debug/signals")
+async def debug_signals(req: SignalsRequest) -> dict:
+    """② 빠른 신호만 실행해서 결과를 그대로 보여줍니다. 개발 확인용 (Day 2)."""
+    return (await collect_fast_signals(req.text)).to_dict()
+
+
 @router.post("/judge", response_model=JudgeResponse)
-async def judge(req: JudgeRequest) -> JudgeResponse:
-    if settings.use_fake_judge:
-        return fake_judge(req)
-    # TODO(백엔드 1, Day 3): cascade.run(req) 로 교체
-    return fake_judge(req)
+async def judge(req: JudgeRequest, background: BackgroundTasks) -> JudgeResponse:
+    # 1. 문자 판정 실행
+    result = fake_judge(req) if settings.use_fake_judge else await cascade.run(req)
+
+    # 2. 위험 또는 주의 판정이면 사건 기록 생성
+    if result.level in (Level.danger, Level.caution):
+        incident = ScamIncident(
+            protected_device_id=req.device_id,
+            level=result.level.value,
+            scam_type=result.scam_type.value,
+        )
+
+        # DB에 사건 저장
+        with Session(engine) as session:
+            session.add(incident)
+            session.commit()
+            session.refresh(incident)
+
+        # 생성된 사건 ID를 판정 응답에 추가
+        result.incident_id = incident.id
+
+    # 3. 위험 판정일 때만 보호자 알림 전송
+    if result.level is Level.danger:
+        background.add_task(
+            notify_guardians,
+            req.device_id,
+            result.level.value,
+            result.scam_type.value,
+        )
+
+    return result

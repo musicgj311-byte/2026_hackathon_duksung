@@ -1,0 +1,99 @@
+id,label,category,scam_type,channel,sender,sender_saved,sender_tag,text,url,url_status,expected_risk,allowed_risks,signals,source,note
+S01,scam,scam,finance,sms,국제발신 번호,FALSE,international,[국제발신] [**카드] [2436]카드 개통완료1/24 고객님 개통내용이 아니시면신고 접수바랍니다 070-1234-5678,,none,danger,danger,asks_call,보도 사례 - 안랩 2026.4 (전화번호는 테스트용으로 추가),링크 없이 전화 유도. 보이스피싱 연결 사례
+S02,scam,scam,finance,sms,1666-2344,FALSE,web,"[Web발신] [OO카드] 해외승인 USD 1,280.00 결제완료. 본인 아닐 시 고객센터 070-4321-8765 즉시 신고바랍니다",,none,danger,danger,asks_call,직접 작성,해외결제 승인 사칭 + 전화 유도
+S03,scam,scam,finance,sms,010-2434-2741,FALSE,none,[OO은행] 고객님 계좌가 보안 위험으로 일시 정지되었습니다. 본인인증 후 해제하세요 http://testsafebrowsing.appspot.com/s/malware.html,http://testsafebrowsing.appspot.com/s/malware.html,safebrowsing_test,danger,danger,asks_info,직접 작성,Google 테스트 주소: Safe Browsing에서 악성으로 잡혀야 함
+S04,scam,scam,loan,sms,010-5345-2741,FALSE,none,"최고의 조건으로 이용가능한 자,,금을 전해드립니다.",,none,caution,caution|danger,,보도 사례 - 안랩 2026.4,"'자,,금'처럼 글자를 깨뜨려 키워드 검사를 피함. LLM이 잡아야 함"
+S05,scam,scam,loan,sms,010-2345-8830,FALSE,none,[OO캐피탈] 정부지원 저금리 대환대출 승인대상입니다. 기존 대출 상환 확인을 위해 보증금 50만원 선입금 후 진행됩니다.,,none,danger,danger,asks_money,직접 작성,선입금 요구
+S06,scam,scam,loan,sms,010-0099-2741,FALSE,none,햇살론 특별 한도 조회 가능 고객님. 아래 앱 설치 후 신청하세요 http://low-rate-loan-gov.test/app.apk,http://low-rate-loan-gov.test/app.apk,blocklist_test,danger,danger,asks_install,직접 작성,.apk 링크는 목록과 상관없이 위험
+S07,scam,scam,government,sms,010-9437-2342,FALSE,none,[교통경찰청(이파인)] 과태료가 발부되었습니다 과태료내용 확인바랍니다 http://efine-police-go.example/notice,http://efine-police-go.example/notice,blocklist_test,danger,danger,,보도 사례 - 안랩 2026.4 (링크는 테스트 주소로 대체),
+S08,scam,scam,government,sms,010-2433-8830,FALSE,none,음식물 쓰레기 무단 투기로 적발돼 과태료가 부과됐습니다. 하기 인터넷주소(URL)에 접속해 과태료를 납부하시기 바랍니다. http://testsafebrowsing.appspot.com/s/malware.html,http://testsafebrowsing.appspot.com/s/malware.html,safebrowsing_test,danger,danger,asks_money,보도 사례 - 지디넷코리아(KISA) 2025.8 (링크는 테스트 주소로 대체),Google 테스트 주소
+S09,scam,scam,government,sms,010-5234-2741,FALSE,none,"[국민건강보험] 2026년 본인부담 환급금 312,000원 미수령 확인. 7일 내 신청 http://refund-gov-support.example/apply",http://refund-gov-support.example/apply,blocklist_test,danger,danger,asks_info,직접 작성,환급금 + 기한 압박
+S10,scam,scam,delivery,sms,1666-6542,FALSE,web,[Web발신] [CJ대한통운] 주문하신물품. 미배달 도로명불일치. 수정하세요. http://cj-parcel-redelivery.example/addr?id=8812,http://cj-parcel-redelivery.example/addr?id=8812,blocklist_test,danger,danger,,보도 사례 - 미디어오늘 2024.2 (링크는 테스트 주소로 대체),
+S11,scam,scam,delivery,sms,010-5432-2741,FALSE,none,배송 중인 물품의 정상 처리를 위해 본인 확인 요청드립니다. http://cj-parce1.example/track,http://cj-parce1.example/track,blocklist_test,danger,danger,asks_info,보도 사례 - 안랩 2026.4 (링크는 테스트 주소로 대체),택배사 이름 글자 바꿔치기(l→1) 도메인
+S12,scam,scam,delivery,sms,국제발신 번호,FALSE,international,[국제발신] [우체국] 고객님 소포가 주소 불명으로 보관 중입니다. 3일 내 미확인 시 반송됩니다 http://testsafebrowsing.appspot.com/s/malware.html,http://testsafebrowsing.appspot.com/s/malware.html,safebrowsing_test,danger,danger,,직접 작성,Google 테스트 주소
+S13,scam,scam,invitation,sms,010-0983-2741,FALSE,none,[모바일청첩장] 저희 결혼합니다. 오셔서 축하해주세요. 일시: 4/12(토) http://mobile-wedding-card.example/m/0412,http://mobile-wedding-card.example/m/0412,blocklist_test,danger,danger,,보도 사례 - KB Think 2025.3 (링크는 테스트 주소로 대체),
+S14,scam,scam,invitation,sms,010-2431-8830,FALSE,none,[부고 알림] 부친께서 오늘 별세하셨기에 부고를 전해드립니다. http://obituary-notice.test/funeral,http://obituary-notice.test/funeral,blocklist_test,danger,danger,,보도 사례 - KB Think 2025.3 (링크는 테스트 주소로 대체),
+S15,scam,scam,invitation,kakao,김영숙 (저장됨),TRUE,none,제 자녀 결혼식 청첩장입니다 http://wedding-invite.test/kim,http://wedding-invite.test/kim,unlisted,caution,caution,,직접 작성 (안랩 사례 문구 응용),저장된 연락처 + 목록에 없는 링크 → 최대 주의. 지인 계정 탈취 가능성
+S16,scam,scam,family,sms,010-3456-2741,FALSE,none,엄마 지금 뭐해 ? 폰 폰파손금 접수 넣오본적 있어 ?,,none,caution,caution,,보도 사례 - 안랩 2026.4,송금 요구 전 반응을 떠보는 첫 문자
+S17,scam,scam,family,sms,010-7564-8830,FALSE,none,엄마 나 폰 액정 깨져서 수리 맡겼어. 이 번호로 연락해. 급하게 결제할 게 있는데 50만원만 이 계좌로 보내줄 수 있어? OO은행 000-0000-0000-00,,none,danger,danger,asks_money,직접 작성,모르는 번호 + 가족 사칭 + 송금 요구. 계좌번호는 가짜 자리표시
+S18,scam,scam,family,kakao,딸 지은 (저장됨),TRUE,none,엄마 나 계좌가 막혀서 그런데 오늘만 300만원 이 계좌로 보내줘. 나중에 설명할게,,none,caution,caution,asks_money,직접 작성,저장된 연락처 송금 요구 → 주의 + '원래 번호로 직접 전화' 안내 (팀 합의)
+N01,normal,normal_daily,none,sms,딸 지은 (저장됨),TRUE,none,엄마 오늘 저녁에 갈게 반찬 뭐 필요해?,,none,safe,safe,,직접 작성,
+N02,normal,normal_daily,none,sms,아들 민수 (저장됨),TRUE,none,아빠 이번 주말에 애들 데리고 갈게요,,none,safe,safe,,직접 작성,
+N03,normal,normal_daily,none,sms,딸 지은 (저장됨),TRUE,none,엄마 병원 예약 내일 오전 10시로 했어,,none,safe,safe,,직접 작성,
+N04,normal,normal_daily,none,kakao,친구 순자 (저장됨),TRUE,none,내일 노인복지관 수업 끝나고 같이 점심 먹자,,none,safe,safe,,직접 작성,
+N05,normal,normal_daily,none,sms,남편 (저장됨),TRUE,none,퇴근길에 두부 하나 사갈게,,none,safe,safe,,직접 작성,
+N06,normal,normal_daily,none,kakao,동생 미경 (저장됨),TRUE,none,언니 김장 언제 해? 나 그날 시간 비워둘게,,none,safe,safe,,직접 작성,
+N07,normal,normal_daily,none,kakao,등산모임 회장 (저장됨),TRUE,none,등산 모임 토요일 9시 수유역 3번 출구야,,none,safe,safe,,직접 작성,
+N08,normal,normal_daily,none,kakao,딸 지은 (저장됨),TRUE,none,엄마 사진 보냈어 손주 돌잔치 때 찍은 거,,none,safe,safe,,직접 작성,
+N09,normal,normal_daily,none,sms,아들 민수 (저장됨),TRUE,none,어머니 약 다 드셨으면 말씀하세요 제가 타올게요,,none,safe,safe,,직접 작성,
+N10,normal,normal_daily,none,kakao,친구 순자 (저장됨),TRUE,none,오늘 비 온대 우산 챙겨,,none,safe,safe,,직접 작성,
+N11,normal,normal_daily,none,kakao,교회 권사님 (저장됨),TRUE,none,이번 주 수요예배 끝나고 다과 있어요,,none,safe,safe,,직접 작성,
+N12,normal,normal_daily,none,kakao,딸 지은 (저장됨),TRUE,none,엄마 생일 축하해! 저녁에 케이크 사갈게,,none,safe,safe,,직접 작성,
+N13,normal,normal_daily,none,kakao,손녀 하은 (저장됨),TRUE,none,할머니 저 시험 잘 봤어요!,,none,safe,safe,,직접 작성,
+N14,normal,normal_daily,none,sms,친구 영희 (저장됨),TRUE,none,지난번 빌려간 책 다음 주에 돌려줄게,,none,safe,safe,,직접 작성,
+N15,normal,normal_daily,none,sms,옆집 302호 (저장됨),TRUE,none,택배가 저희 집으로 잘못 왔더라고요 저녁에 갖다드릴게요,,none,safe,safe,,직접 작성,
+N16,normal,normal_daily,none,sms,아들 민수 (저장됨),TRUE,none,엄마 보일러 기사님 내일 2시에 오신대,,none,safe,safe,,직접 작성,
+N17,normal,normal_daily,none,kakao,딸 지은 (저장됨),TRUE,none,엄마 카톡으로 영상통화 할 수 있어?,,none,safe,safe,,직접 작성,
+N18,normal,normal_daily,none,kakao,친구 영희 (저장됨),TRUE,none,노래교실 이번 주는 쉰대,,none,safe,safe,,직접 작성,
+N19,normal,normal_daily,none,sms,남편 (저장됨),TRUE,none,차 정기점검 맡겼어 오후에 찾으러 가,,none,safe,safe,,직접 작성,
+N20,normal,normal_daily,none,kakao,언니 정숙 (저장됨),TRUE,none,엄마 생신 선물 같이 할래? 반반 하자,,none,safe,safe,,직접 작성,
+N21,normal,normal_daily,none,sms,아들 민수 (저장됨),TRUE,none,회사 끝나고 들를게요 7시쯤,,none,safe,safe,,직접 작성,
+N22,normal,normal_daily,none,kakao,친구 순자 (저장됨),TRUE,none,김치 좀 담갔는데 가져갈래?,,none,safe,safe,,직접 작성,
+N23,normal,normal_daily,none,kakao,딸 지은 (저장됨),TRUE,none,엄마 감기 조심해 요즘 독감 유행이래,,none,safe,safe,,직접 작성,
+N24,normal,normal_daily,none,kakao,친구 영희 (저장됨),TRUE,none,오늘 수영장 휴관이래,,none,safe,safe,,직접 작성,
+N25,normal,normal_daily,none,sms,사위 (저장됨),TRUE,none,장모님 이번 추석에 찾아뵙겠습니다,,none,safe,safe,,직접 작성,
+N26,normal,normal_daily,none,kakao,동창 철수 (저장됨),TRUE,none,우리 반 동창회 12월 둘째 주 토요일로 정했어,,none,safe,safe,,직접 작성,
+N27,normal,normal_daily,none,sms,딸 지은 (저장됨),TRUE,none,엄마 아까 전화 못 받았어 무슨 일이야?,,none,safe,safe,,직접 작성,
+N28,normal,normal_daily,none,sms,아들 민수 (저장됨),TRUE,none,아버지 이번 달 휴대폰 요금은 제가 냈어요,,none,safe,safe,,직접 작성,
+N29,normal,normal_daily,none,kakao,친구 순자 (저장됨),TRUE,none,복지관에서 스마트폰 교실 신청 받는대 같이 하자,,none,safe,safe,,직접 작성,
+N30,normal,normal_daily,none,sms,이웃 201호 (저장됨),TRUE,none,관리비 고지서가 저희 거랑 바뀌어서 왔어요,,none,safe,safe,,직접 작성,
+N31,normal,normal_daily,none,kakao,동생 철민 (저장됨),TRUE,none,형 다음 주에 시간 되면 낚시 가자,,none,safe,safe,,직접 작성,
+N32,normal,normal_daily,none,kakao,딸 지은 (저장됨),TRUE,none,엄마 이 사진 어때? 커튼 이걸로 바꿀까,,none,safe,safe,,직접 작성,
+N33,normal,normal_daily,none,kakao,친구 영희 (저장됨),TRUE,none,오늘 정말 즐거웠어 조심히 들어가,,none,safe,safe,,직접 작성,
+N34,normal,normal_daily,none,kakao,손자 준호 (저장됨),TRUE,none,할아버지 저 이번에 반장 됐어요,,none,safe,safe,,직접 작성,
+N35,normal,normal_daily,none,sms,아들 민수 (저장됨),TRUE,none,엄마 이번 주 토요일 가족 외식 6시 예약했어요,,none,safe,safe,,직접 작성,
+N36,normal,normal_daily,none,sms,친구 순자 (저장됨),TRUE,none,내일 병원 같이 가줄까?,,none,safe,safe,,직접 작성,
+N37,normal,normal_daily,none,sms,남편 (저장됨),TRUE,none,오늘 늦어 먼저 자,,none,safe,safe,,직접 작성,
+N38,normal,normal_daily,none,sms,아들 민수 (저장됨),TRUE,none,엄마 새로 산 핸드폰 설정 주말에 해드릴게요,,none,safe,safe,,직접 작성,
+N39,normal,normal_daily,none,kakao,친구 영희 (저장됨),TRUE,none,마트 계란 세일하더라,,none,safe,safe,,직접 작성,
+N40,normal,normal_daily,none,kakao,친구 순자 (저장됨),TRUE,none,문화센터 서예반 등록했어,,none,safe,safe,,직접 작성,
+N41,normal,normal_daily,none,kakao,친구 영희 (저장됨),TRUE,none,오늘 날씨 좋다 산책 가자,,none,safe,safe,,직접 작성,
+N42,normal,normal_daily,none,kakao,친구 순자 (저장됨),TRUE,none,손주 봐주러 가야 해서 오늘 모임 못 가,,none,safe,safe,,직접 작성,
+N43,normal,normal_daily,none,kakao,딸 지은 (저장됨),TRUE,none,엄마 김장 김치 진짜 맛있다 고마워,,none,safe,safe,,직접 작성,
+N44,normal,normal_daily,none,sms,아들 민수 (저장됨),TRUE,none,엄마 나 출장 다녀올게 금요일에 와요,,none,safe,safe,,직접 작성,
+N45,normal,normal_lookalike,none,sms,1588-1255,FALSE,none,[CJ대한통운] 고객님의 상품이 오늘 14~16시 배송 예정입니다. 송장번호 6123****8890,,none,safe,safe|caution,,직접 작성,"닮은 수법: delivery. 정상 택배 알림, 링크 없음"
+N46,normal,normal_lookalike,none,sms,1588-1300,FALSE,none,[우체국택배] 고객님 소포가 오늘 배달 완료되었습니다. 수령: 경비실,,none,safe,safe|caution,,직접 작성,닮은 수법: delivery.
+N47,normal,normal_lookalike,none,sms,1577-6574,FALSE,web,[Web발신] 주문하신 상품이 문 앞에 배송 완료되었습니다.,,none,safe,safe|caution,,직접 작성,닮은 수법: delivery.
+N48,normal,normal_lookalike,none,sms,딸 지은 (저장됨),TRUE,none,엄마 택배 보냈어 내일 도착할 거야,,none,safe,safe,,직접 작성,닮은 수법: delivery. 저장된 연락처 + 택배 단어
+N49,normal,normal_lookalike,none,sms,01-5467,FALSE,none,택배기사입니다. 문 앞에 두고 갑니다.,,none,safe,safe|caution,,직접 작성,닮은 수법: delivery. 모르는 번호지만 링크·요구 없음
+N50,normal,normal_lookalike,none,sms,1588-5674,FALSE,none,"[OO카드] 홍*동님 11/02 14:32 23,500원 일시불 승인 OO마트",,none,safe,safe,,직접 작성,닮은 수법: finance. 정상 카드 승인 알림
+N51,normal,normal_lookalike,none,sms,1588-0055,FALSE,none,[OO카드] 해외승인 USD 12.99 (넷플릭스) 11/01,,none,safe,safe|caution,,직접 작성,닮은 수법: finance. '해외승인' 단어가 있지만 전화 유도 없음
+N52,normal,normal_lookalike,none,sms,1588-0055,FALSE,none,"[OO카드] 11/01 23,500원 승인취소 OO마트",,none,safe,safe,,직접 작성,닮은 수법: finance.
+N53,normal,normal_lookalike,none,sms,1588-0055,FALSE,none,[OO카드] 신청하신 카드가 발급되어 영업일 3일 내 등기로 배송됩니다.,,none,safe,safe|caution,,직접 작성,닮은 수법: finance. 실제로 신청한 경우. 전화·링크 없음
+N54,normal,normal_lookalike,none,sms,1588-0055,FALSE,none,"[OO은행] 홍*동님 출금 30,000원 잔액 1,250,000원",,none,safe,safe,,직접 작성,닮은 수법: finance.
+N55,normal,normal_lookalike,none,sms,1588-0055,FALSE,none,[OO은행] 인증번호 [482915]를 입력해주세요. 타인에게 절대 알려주지 마세요.,,none,safe,safe|caution,,직접 작성,"닮은 수법: finance. 인증번호 단어 포함, 정상 인증 문자"
+N56,normal,normal_lookalike,none,kakao,OO은행 카카오톡 채널,FALSE,none,[OO은행] 적금 만기 안내: 11/20 만기 예정입니다. 영업점 또는 앱에서 확인하세요.,,none,safe,safe,,직접 작성,닮은 수법: finance.
+N57,normal,normal_lookalike,none,sms,딸 지은 (저장됨),TRUE,none,엄마 계좌 비밀번호는 절대 문자로 보내지 마 알지?,,none,safe,safe|caution,,직접 작성,닮은 수법: finance. '계좌 비밀번호' 단어가 있지만 오히려 주의를 주는 문자
+N58,normal,normal_lookalike,none,sms,아들 민수 (저장됨),TRUE,none,아버지 부탁하신 돈 보냈어요 확인해보세요,,none,safe,safe|caution,,직접 작성,"닮은 수법: family. 돈을 보냈다는 문자, 요구 아님"
+N59,normal,normal_lookalike,none,kakao,딸 지은 (저장됨),TRUE,none,엄마 이번 달 학원비 보내줄 수 있어? 내 계좌로 30만원만,,none,caution,safe|caution,,직접 작성,닮은 수법: family. 실제 가족의 송금 요청이지만 규칙상 주의가 정상 동작
+N60,normal,normal_lookalike,none,sms,010-5234-2741,FALSE,none,엄마 나 번호 바꿨어. 이 번호로 저장해줘 - 지은,,none,caution,safe|caution,,직접 작성,닮은 수법: family. 실제로 번호를 바꾼 경우. 사기 첫 문자와 구분 불가 → 주의 허용
+N61,normal,normal_lookalike,none,sms,1661-5344,FALSE,none,(광고)[OO은행] 서민금융 상품 안내. 자세한 내용은 영업점 또는 은행 앱에서 확인하세요. 무료수신거부 080-123-4567,,none,safe,safe|caution,,직접 작성,"닮은 수법: loan. 정식 금융사 광고, 080 수신거부"
+N62,normal,normal_lookalike,none,sms,3424-2343,FALSE,web,[Web발신] [OO도서관] 대출하신 도서 반납일은 11/10입니다.,,none,safe,safe,,직접 작성,닮은 수법: loan. '대출'이 책 대출. 오탐 확인용
+N63,normal,normal_lookalike,none,sms,1588-0055,FALSE,none,(광고)[OO마트] 이번 주 과일 할인 행사 안내. 무료수신거부 080-234-5678,,none,safe,safe,,직접 작성,닮은 수법: other.
+N64,normal,normal_lookalike,none,sms,114,FALSE,none,(광고)[OO텔레콤] 11월 데이터 2배 이벤트 안내. 무료수신거부 080-345-6789,,none,safe,safe,,직접 작성,닮은 수법: other.
+N65,normal,normal_lookalike,none,sms,02-123-3451,FALSE,none,[OO의원] 내일 오후 3시 진료 예약 안내드립니다. 변경은 02-123-4567,,none,safe,safe|caution,,직접 작성,닮은 수법: finance. 전화번호가 있지만 예약 변경 안내
+N66,normal,normal_lookalike,none,sms,02-344-2155,FALSE,none,[OO약국] 처방하신 약이 준비되었습니다.,,none,safe,safe,,직접 작성,닮은 수법: other.
+N67,normal,normal_lookalike,none,sms,행정안전부,FALSE,none,"[행정안전부] 오늘 오후 강풍 주의, 외출을 자제하세요.",,none,safe,safe,,직접 작성,닮은 수법: government. 재난문자
+N68,normal,normal_lookalike,none,sms,국민비서,FALSE,none,"[국민비서] 홍*동님, 2026년 자동차세 납부기한은 12월 31일입니다. 납부는 위택스 또는 은행 앱에서 하세요.",,none,safe,safe|caution,,직접 작성,닮은 수법: government. 납부 안내지만 링크 없음
+N69,normal,normal_lookalike,none,sms,1577-1000,FALSE,none,[국민건강보험] 2026년 건강검진 대상자입니다. 가까운 검진기관에 예약 후 수검하세요.,,none,safe,safe|caution,,직접 작성,닮은 수법: government. 링크 없는 정상 검진 안내
+N70,normal,normal_lookalike,none,sms,02-123-3451,FALSE,none,[OO동 주민센터] 신청하신 기초연금 서류 접수가 완료되었습니다.,,none,safe,safe,,직접 작성,닮은 수법: government.
+N71,normal,normal_lookalike,none,sms,02-344-2155,FALSE,none,[OO구청] 겨울철 난방비 지원 신청 기간 안내(11/1~11/30). 주민센터 방문 신청,,none,safe,safe|caution,,직접 작성,"닮은 수법: government. '지원' 단어, 링크 없음"
+N72,normal,normal_lookalike,none,sms,경기남부경찰청,FALSE,none,"[경기남부경찰청] 실종자를 찾습니다. 김OO(79세, 남) 165cm, 회색 점퍼. 목격 시 182 신고",,none,safe,safe|caution,,직접 작성,"닮은 수법: government. 경찰청 이름 + 신고 번호, 정상 실종 경보"
+N73,normal,normal_lookalike,none,sms,친구 영희 (저장됨),TRUE,none,건강검진 결과 나왔어? 나는 다 괜찮대,,none,safe,safe,,직접 작성,"닮은 수법: government. '건강검진' 단어, 저장된 친구"
+N74,normal,normal_lookalike,none,sms,02-243-4234,FALSE,none,[OO아파트 관리사무소] 11/5 단수 안내: 10시~14시,,none,safe,safe,,직접 작성,닮은 수법: other.
+N75,normal,normal_lookalike,none,sms,02-000-3233,FALSE,none,[OO복지관] 11월 스마트폰 교실 수강 신청 안내. 문의 02-987-6543,,none,safe,safe,,직접 작성,닮은 수법: other.
+N76,normal,normal_lookalike,none,sms,국제발신 번호,FALSE,international,[국제발신] [OO항공] 고객님의 항공권 예약이 확정되었습니다. 예약번호 ABC123,,none,safe,safe|caution,,직접 작성,닮은 수법: other. 국제발신이지만 정상 예약 확인
+N77,normal,normal_lookalike,none,kakao,언니 정숙 (저장됨),TRUE,none,조카 결혼식 날짜 잡혔대 5월 셋째 주,,none,safe,safe,,직접 작성,"닮은 수법: invitation. '결혼식' 단어, 링크 없음"
+N78,normal,normal_lookalike,none,kakao,친구 영희 (저장됨),TRUE,none,"친구야, 어머니께서 어제 돌아가셨어. 장례식장은 OO병원 장례식장 3호실이야.",,none,safe,safe|caution,,직접 작성,"닮은 수법: invitation. 실제 부고, 링크 없음"
+N79,normal,normal_lookalike,none,kakao,친구 순자 (저장됨),TRUE,none,우리 딸 결혼해요 모바일 청첩장 보내요 https://newsstand.naver.com/?list&pcode=081,https://newsstand.naver.com/?list&pcode=081,unlisted,caution,safe|caution,,직접 작성,닮은 수법: invitation. 실제 청첩장이라도 저장 연락처 + 링크는 주의가 정상 동작
+N80,normal,normal_lookalike,none,sms,아들 민수 (저장됨),TRUE,none,엄마 이번에 받은 지원금은 주민센터 가서 같이 신청하자,,none,safe,safe,,직접 작성,"닮은 수법: government. '지원금' 단어, 저장된 가족"

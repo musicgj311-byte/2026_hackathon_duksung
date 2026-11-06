@@ -65,6 +65,7 @@ class JudgeResponse(BaseModel):
     signals: list[str] = Field(default_factory=list, description="판정 근거 (사용자 언어)")
     has_url: bool
     url_result: UrlResult | None = None
+
     # 아래 네 필드는 사용자 언어로 번역된 상태로 내려갑니다. 프론트는 그대로 표시만 합니다.
     title: str
     explanation: str
@@ -73,3 +74,9 @@ class JudgeResponse(BaseModel):
     language: str
     stage_reached: int = Field(..., ge=2, le=3, description="판정이 끝난 캐스케이드 단계")
     elapsed_ms: int
+
+    # 사건 ID (위험·주의 판정 시 생성, 안전 판정 시 null)
+    incident_id: int | None = Field(
+        default=None,
+        description="사건 식별자. danger/caution은 사건 ID, safe는 null",
+    )

@@ -6,3 +6,5 @@ firebase-key.json
 *.db
 .ruff_cache/
 .DS_Store
+secrets/
+eval_results/

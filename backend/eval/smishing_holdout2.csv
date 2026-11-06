@@ -1,0 +1,21 @@
+id,label,category,scam_type,channel,sender,sender_saved,sender_tag,text,url,url_status,expected_risk,allowed_risks,signals,source,note
+H01,scam,카드 사칭(전화 유도),,sms,1661-0000,FALSE,none,[Web발신] [신한카드] 회원님 카드가 해외에서 사용될 예정입니다. 본인이 아니면 1661-0000으로 연락 주세요.,,,danger,danger|caution,,기획 추가 세트,정상 카드 문자와 형식이 거의 같음
+H02,scam,가족 사칭,,sms,010-8823-4410,FALSE,none,아빠 나야. 폰 고장 나서 컴퓨터로 문자해. 인증 좀 도와줄 수 있어?,,,danger,danger|caution,,기획 추가 세트,"인증 요청, 링크 없음"
+H03,scam,공공기관 사칭,,sms,010-2201-7735,FALSE,none,"[국민건강보험] 미환급금 52,000원이 있습니다. 조회: nhis-refund.example",,,danger,danger,,기획 추가 세트,환급금 + 가짜 주소
+H04,scam,대출 빙자(글자 깨기),,sms,010-5560-1290,FALSE,none,안 녕 하 세 요. 저 금 리 대 환 대 출 가 능 합 니 다. 상담 010-5560-1290,,,danger,danger|caution,,기획 추가 세트,글자마다 띄어쓰기
+H05,scam,부고 위장,,sms,010-3317-8820,FALSE,none,[부고] 故 김○○님께서 별세하셨습니다. 장례식장 안내 obit-info.example,,,danger,danger,,기획 추가 세트,모르는 번호 + 부고 + 링크
+H06,scam,쇼핑몰 사칭(전화 유도),,sms,070-4000-0000,FALSE,none,"[쿠팡] 결제 완료 1,290,000원 (노트북). 본인 아닐 시 취소 문의 070-4000-0000",,,danger,danger|caution,,기획 추가 세트,실제 결제 알림처럼 보임
+H07,scam,지인 사칭,,kakao,엄마친구,FALSE,none,너희 엄마가 급하게 병원비를 보내 달래. 이 계좌로 200만원만 먼저 보내 줘,,,danger,danger|caution,,기획 추가 세트,가족 대신 제3자를 사칭
+H08,scam,공공기관 사칭(앱 설치),,sms,010-9002-1123,FALSE,none,[Web발신] 경찰청 사이버수사대: 귀하의 개인정보 유출이 확인되었습니다. 보안 앱 설치 police-secure.example,,,danger,danger,,기획 추가 세트,수사기관 + 앱 설치 유도
+H09,normal,카드 승인 알림,,sms,1800-1111,FALSE,none,"[Web발신] [하나카드] 11/06 승인 12,000원 일시불 스타벅스",,,safe,safe,,기획 추가 세트,카드사 이름 + 금액
+H10,normal,택배 알림,,sms,1588-0011,FALSE,none,[한진택배] 오늘 배송 예정입니다. 배송 기사 010-2234-0000,,,safe,safe,,기획 추가 세트,택배사 이름 + 전화번호
+H11,normal,가족 일상,,kakao,남편,TRUE,none,퇴근길에 우유 좀 사 와,,,safe,safe,,기획 추가 세트,가족 대화
+H12,normal,가족 송금 부탁,,kakao,딸,TRUE,none,엄마 이번 달 학원비 25만원 엄마 계좌에서 보내 줄 수 있어?,,,caution,caution,,기획 추가 세트,저장된 가족의 송금 요청 → 정답이 '주의'
+H13,normal,공공기관 안내,,sms,1355,FALSE,none,[국민연금공단] 11월 연금이 지급되었습니다. 문의 1355,,,safe,safe,,기획 추가 세트,공공기관 + 돈
+H14,normal,공공기관 안내,,sms,02-120,FALSE,none,[○○구청] 65세 이상 독감 예방접종 무료 대상입니다. 가까운 지정 의료기관을 방문해 주세요.,,,safe,safe,,기획 추가 세트,무료 + 대상자 안내
+H15,normal,배송 완료,,kakao,○○플라워,FALSE,none,"안녕하세요, 어제 주문하신 꽃 배송 완료 사진 보내드립니다.",,,safe,safe,,기획 추가 세트,모르는 상대 카톡
+H16,normal,이체 알림,,sms,1599-3333,FALSE,none,"[Web발신] [카카오뱅크] 이체 완료 50,000원 홍*동",,,safe,safe,,기획 추가 세트,은행 + 금액
+H17,normal,은행 안내,,sms,1588-9999,FALSE,none,[Web발신] [○○은행] 고객님의 정기예금이 11월 20일 만기됩니다. 영업점 방문 또는 앱에서 확인하세요.,,,safe,safe|caution,,기획 추가 세트,은행 + 기한
+H18,normal,번호 변경 알림,,kakao,010-6650-2231,FALSE,none,언니 나 번호 바뀌었어! 이 번호로 저장해 줘,,,caution,caution|safe,,기획 추가 세트,가족 사칭 첫 문자와 똑같은 형식 → 정답이 '주의'
+H19,normal,요금 안내,,sms,114,FALSE,none,"[Web발신] [SKT] 11월 요금 52,300원이 11월 25일 자동이체될 예정입니다.",,,safe,safe,,기획 추가 세트,Web발신 + 금액
+H20,normal,광고,,sms,080-555-0000,FALSE,none,[Web발신] (광고) ○○헬스 11월 회원권 할인 이벤트 무료수신거부 080-555-0000,,,safe,safe,,기획 추가 세트,광고 + 모르는 번호
