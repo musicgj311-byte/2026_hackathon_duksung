@@ -25,12 +25,13 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /**
+ * 최종 시안 7p(코드 표시)·10p(코드 만료). 실제 API 호출과 로컬 시연 코드를 구분합니다.
  * 시연 모드에서는 한 휴대폰으로 진행해야 하므로 '보호자가 입력하기를 기다리고 있어요' 줄을 누르면
- * 보호자 등록 확인 화면으로 넘어갑니다.
+ * 보호자 등록 확인 화면(9p)으로 넘어갑니다.
  */
 @Composable
 fun ProtectedPairingScreen(onBack: () -> Unit, onLater: () -> Unit,
-                           onDemoApproval: () -> Unit = {}) {
+                           onDemoApproval: () -> Unit = {}, onConnected: () -> Unit = {}) {
     val context = LocalContext.current
     val demo = DemoPairing.enabled(context)
     val scope = rememberCoroutineScope()
@@ -39,6 +40,9 @@ fun ProtectedPairingScreen(onBack: () -> Unit, onLater: () -> Unit,
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf("") }
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    // 코드 발급 직전에 이미 연결돼 있던 보호자. 이 목록에 없는 보호자가 생기면 '새로 연결됨'으로 봅니다.
+    var knownGuardians by remember { mutableStateOf<Set<String>>(emptySet()) }
+    val latestOnConnected by rememberUpdatedState(onConnected)
     val remaining = ((ticket?.expiresAtEpochMillis ?: 0L) - now).coerceAtLeast(0L) / 1000L
     val expired = ticket != null && remaining == 0L
 
@@ -58,6 +62,9 @@ fun ProtectedPairingScreen(onBack: () -> Unit, onLater: () -> Unit,
         error = ""
         ticket = null
         scope.launch {
+            // 조회에 실패하면 빈 목록으로 두고, 이후 확인에서 보이는 보호자를 새 연결로 처리합니다.
+            knownGuardians = runCatching { PairingIntegration.backend.connectedGuardianIds(protectedDeviceId) }
+                .getOrDefault(emptySet())
             runCatching { PairingIntegration.backend.issueCode(protectedDeviceId) }
                 .onSuccess { issued ->
                     if (issued.code.length == 6 && issued.code.all(Char::isDigit) &&
@@ -77,6 +84,24 @@ fun ProtectedPairingScreen(onBack: () -> Unit, onLater: () -> Unit,
             delay(1000L)
         }
         now = System.currentTimeMillis()
+    }
+    // 실제 서버 연결: 코드가 유효한 동안 3초마다 연결된 보호자 목록을 확인하고,
+    // 보호자가 코드를 입력해 새 보호자가 생기면 연결 완료 화면으로 넘어갑니다.
+    // 화면을 벗어나거나 코드가 만료·재발급되면 LaunchedEffect가 취소되어 확인도 멈춥니다.
+    LaunchedEffect(ticket, demo) {
+        val issued = ticket ?: return@LaunchedEffect
+        if (demo || !PairingIntegration.isConfigured) return@LaunchedEffect
+        while (System.currentTimeMillis() < issued.expiresAtEpochMillis) {
+            delay(3_000L)
+            val current = runCatching { PairingIntegration.backend.connectedGuardianIds(protectedDeviceId) }
+                .getOrNull() ?: continue // 일시적인 네트워크 오류는 다음 확인에서 다시 시도
+            if ((current - knownGuardians).isNotEmpty()) {
+                context.getSharedPreferences("ansim_settings", android.content.Context.MODE_PRIVATE).edit()
+                    .putBoolean("server_guardian_linked", true).apply()
+                latestOnConnected()
+                return@LaunchedEffect
+            }
+        }
     }
     OnboardingPage(bottomPadding = 24.dp, bottom = {
         if (!expired) {
@@ -119,6 +144,7 @@ fun ProtectedPairingScreen(onBack: () -> Unit, onLater: () -> Unit,
     }
 }
 
+/** 시안 7p 회색 코드 카드: 위 26 · 라벨 · 15 · 숫자칸 56 · 14 · 남은 시간 · 아래 27 */
 @Composable
 private fun PairingCodeCard(ticket: PairingTicket?, expired: Boolean, remaining: Long, busy: Boolean) {
     Column(Modifier.fillMaxWidth().background(AnsimCream, RoundedCornerShape(16.dp))
@@ -147,7 +173,7 @@ private fun PairingCodeCard(ticket: PairingTicket?, expired: Boolean, remaining:
     }
 }
 
-/** 연결 요청 승인 화면. 시연 모드에서는 로컬 데이터만 저장합니다. */
+/** 최종 시안 9p: 연결 요청 승인 화면. 시연 모드에서는 로컬 데이터만 저장합니다. */
 @Composable
 fun DemoGuardianApprovalScreen(onApprove: () -> Unit, onReject: () -> Unit) {
     OnboardingPage(bottom = {
@@ -179,6 +205,7 @@ private fun DemoApprovalRow(label: String, value: String) {
     HorizontalDivider(color = AnsimDivider, thickness = 1.dp)
 }
 
+/** 최종 시안 11p 연결 완료: 체크 아이콘 · 제목 · 아이콘 3줄 · 홈으로 */
 @Composable
 fun GuardianConnectedScreen(onHome: () -> Unit, demo: Boolean = false) {
     val guardianName = DemoPairing.GUARDIAN_NAME.substringBefore(" (")

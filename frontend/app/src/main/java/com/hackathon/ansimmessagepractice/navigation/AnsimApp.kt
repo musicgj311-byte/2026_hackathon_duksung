@@ -72,6 +72,21 @@ fun AnsimApp(
     var guardianPreviewReturnTo by remember { mutableStateOf("home") }
     val warningOverlay = remember(context) { WarningOverlay(context.applicationContext) }
     val previewScope = rememberCoroutineScope()
+    // 실제 서버 연결 여부(피보호자 홈 표시용). 마지막으로 확인한 값을 먼저 보여주고, 홈에 올 때마다 서버에서 다시 확인합니다.
+    var serverGuardianLinked by remember {
+        mutableStateOf(if (prefs.contains("server_guardian_linked")) prefs.getBoolean("server_guardian_linked", false) else null)
+    }
+    LaunchedEffect(currentScreen) {
+        if (currentScreen != "home" || currentRole != "protected" ||
+            DemoPairing.enabled(context) || !PairingIntegration.isConfigured) return@LaunchedEffect
+        runCatching {
+            PairingIntegration.backend.connectedGuardianIds(
+                com.hackathon.ansimmessagepractice.guardian.AnsimDeviceId.value(context, "protected"))
+        }.onSuccess { ids ->
+            serverGuardianLinked = ids.isNotEmpty()
+            prefs.edit().putBoolean("server_guardian_linked", ids.isNotEmpty()).apply()
+        }
+    }
     var previewSerial by remember { mutableIntStateOf(0) }
     DisposableEffect(warningOverlay) { onDispose { warningOverlay.dismiss() } }
 
@@ -147,7 +162,7 @@ fun AnsimApp(
         "protected_pair" -> if (protectedPairFromHome) "home" else "permission"
         "demo_approval" -> if (currentRole == "guardian") "demo_guardian_wait" else "protected_pair"
         "demo_guardian_wait" -> "guardian_pair"
-        "guardian_connected_success" -> "guardian_home"
+        "guardian_connected_success" -> if (currentRole == "guardian") "guardian_home" else "home"
         "guardian" -> if (guardianFromHome) "guardian_manage" else "language"
         "guardian_manage" -> "home"
         "settings", "alert_detail" -> "home"
@@ -246,7 +261,8 @@ fun AnsimApp(
             "protected_pair" -> com.hackathon.ansimmessagepractice.guardian.ProtectedPairingScreen(
                 onBack = { currentScreen = if (protectedPairFromHome) "home" else "permission" },
                 onLater = { if (protectedPairFromHome) currentScreen = "home" else finishSetup() },
-                onDemoApproval = { currentScreen = "demo_approval" }
+                onDemoApproval = { currentScreen = "demo_approval" },
+                onConnected = { currentScreen = "guardian_connected_success" }
             )
             "guardian_connected_success" -> com.hackathon.ansimmessagepractice.guardian.GuardianConnectedScreen(
                 onHome = { finishSetup() },
@@ -277,6 +293,7 @@ fun AnsimApp(
             )
             "home" -> HomeScreen(
                 selectedType = selectedType, selectedLanguage = selectedLanguage,
+                guardianConnected = if (DemoPairing.enabled(context)) null else serverGuardianLinked,
                 onTestWarningClick = { selectedRisk -> risk = selectedRisk; activeWarning = null; currentScreen = "warning" },
                 onSettingsClick = { currentScreen = "settings" },
                 onPermissionClick = { permissionsReturnTo = "home"; currentScreen = "permissions_settings" },

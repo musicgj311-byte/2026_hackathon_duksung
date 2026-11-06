@@ -14,6 +14,8 @@ interface PairingBackend {
     suspend fun redeemCode(guardianDeviceId: String, sixDigitCode: String): PairingLink
     /** 두 ID 모두 전달 */
     suspend fun unlinkGuardian(protectedDeviceId: String, guardianDeviceId: String)
+    /** 보호 대상자에게 현재 연결된 보호자 기기 ID 목록 (연결 코드 화면에서 연결 완료 확인용) */
+    suspend fun connectedGuardianIds(protectedDeviceId: String): Set<String>
 }
 
 /** 서버에 보호 대상자 및 보호자 등록을 보장한 뒤 연결 API를 호출합니다. */
@@ -39,6 +41,14 @@ class HttpPairingBackend(private val context: Context) : PairingBackend {
             org.json.JSONObject().put("protected_device_id", protectedDeviceId)
                 .put("guardian_device_id", guardianDeviceId))
     }
+    override suspend fun connectedGuardianIds(protectedDeviceId: String): Set<String> {
+        val result = com.hackathon.ansimmessagepractice.data.api.BackendApi.request(
+            context, "GET", "/guardian/protected/${android.net.Uri.encode(protectedDeviceId)}/guardians")
+        val items = result.optJSONArray("guardians") ?: return emptySet()
+        return (0 until items.length()).mapNotNull { i ->
+            items.optJSONObject(i)?.optString("guardian_device_id")?.trim()?.takeIf { it.isNotEmpty() }
+        }.toSet()
+    }
 }
 
 private object UnconnectedBackend : PairingBackend {
@@ -46,6 +56,7 @@ private object UnconnectedBackend : PairingBackend {
     override suspend fun issueCode(protectedDeviceId: String): PairingTicket = unavailable()
     override suspend fun redeemCode(guardianDeviceId: String, sixDigitCode: String): PairingLink = unavailable()
     override suspend fun unlinkGuardian(protectedDeviceId: String, guardianDeviceId: String): Unit = unavailable()
+    override suspend fun connectedGuardianIds(protectedDeviceId: String): Set<String> = unavailable()
 }
 
 object PairingIntegration {
