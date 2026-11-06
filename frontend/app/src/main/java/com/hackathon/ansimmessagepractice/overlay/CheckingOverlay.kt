@@ -18,8 +18,7 @@ import com.hackathon.ansimmessagepractice.ui.onboarding.largeTextScale
 import com.hackathon.ansimmessagepractice.ui.theme.DESIGN_FONT_SCALE
 
 /**
- * 최종 시안 16p: 의심 메시지를 분석하는 동안 화면 위쪽에 잠깐 보여주는 카드.
- * 좌우 13dp, 위 17dp, 모서리 16, 1dp 테두리 + 그림자. 사용자가 직접 누르는 UI는 아닙니다.
+ * 의심 메시지를 분석하는 동안 화면 위쪽에 잠깐 보여주는 카드.
  */
 internal class CheckingOverlay(private val context: Context) {
     private val windowManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager

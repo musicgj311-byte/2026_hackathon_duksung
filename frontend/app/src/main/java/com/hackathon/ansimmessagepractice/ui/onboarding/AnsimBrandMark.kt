@@ -21,11 +21,6 @@ import com.hackathon.ansimmessagepractice.ui.theme.AnsimBlue
 import com.hackathon.ansimmessagepractice.ui.theme.AnsimIcon
 import com.hackathon.ansimmessagepractice.ui.theme.AnsimIcons
 
-/**
- * 시안 1p 로고: 둥근 사각형 안에 '말풍선 꼬리가 달린 방패' + 체크.
- * 좌표는 시안 로고(56dp)를 픽셀 단위로 측정한 값입니다.
- * inverse=true: 흰 사각형 + 파란 방패 (시작 화면), false: 파란 사각형 + 흰 방패.
- */
 @Composable
 fun AnsimBrandMark(size: Dp = 46.dp, modifier: Modifier = Modifier, inverse: Boolean = false,
                    showCheck: Boolean = true) {
@@ -38,12 +33,10 @@ fun AnsimBrandMark(size: Dp = 46.dp, modifier: Modifier = Modifier, inverse: Boo
     }
 }
 
-/** 보호자 홈(34p)·잠금화면 알림(22p)의 앱 아이콘: 파란 사각형 + 흰 말풍선 방패 */
 @Composable
 fun AnsimAppIcon(size: Dp = 24.dp, modifier: Modifier = Modifier) =
     AnsimBrandMark(size = size, modifier = modifier, inverse = false, showCheck = false)
 
-/** 보호자 알림 카드(33p) 아이콘: 파란 사각형 + 흰 선 방패 체크 */
 @Composable
 fun AnsimShieldBadge(size: Dp = 38.dp, modifier: Modifier = Modifier) {
     Box(modifier.size(size).background(AnsimBlue, RoundedCornerShape(size * .24f)),
@@ -52,7 +45,6 @@ fun AnsimShieldBadge(size: Dp = 38.dp, modifier: Modifier = Modifier) {
     }
 }
 
-/** 56 격자 기준 방패+말풍선 꼬리 */
 private fun DrawScope.drawShieldBubble(color: Color, checkColor: Color?) {
     val k = size.width / 56f
     val shield = Path().apply {

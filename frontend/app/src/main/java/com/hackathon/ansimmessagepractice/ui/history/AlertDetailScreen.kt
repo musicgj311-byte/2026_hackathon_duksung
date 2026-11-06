@@ -24,7 +24,6 @@ import java.util.Calendar
 import com.hackathon.ansimmessagepractice.ui.theme.*
 
 /**
- * 최종 시안 28p 알림 상세.
  * record == null: 홈의 시연 예시(위험/주의). record != null: 이 기기에 저장된 실제 경고 기록
  * (원문·발신 번호는 저장하지 않으므로 표시하지 않습니다).
  */

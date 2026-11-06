@@ -15,11 +15,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import com.hackathon.ansimmessagepractice.ui.theme.*
 
-/**
- * 최종 시안 1p. 배경의 두 링은 중심이 서로 다릅니다(시안 측정값, 390dp 폭 기준).
- *  - 바깥 링: 중심 (244, 386), 반지름 238, 두께 56, 흰색 7%
- *  - 안쪽 링: 중심 (260, 370), 반지름 150, 두께 41, 흰색 9%
- */
 @Composable
 fun StartScreen(name: String, modifier: Modifier = Modifier, onStartClick: () -> Unit) {
     StatusBarIcons(light = true)

@@ -5,7 +5,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
-/** 최종 시안 3p: 1/4 단계, 알림 방식 카드 4개(높이 64, 간격 16). */
 @Composable
 fun UserTypeScreen(selectedType: String, onTypeSelected: (String) -> Unit,
                    onNextClick: () -> Unit, onBackClick: () -> Unit) {

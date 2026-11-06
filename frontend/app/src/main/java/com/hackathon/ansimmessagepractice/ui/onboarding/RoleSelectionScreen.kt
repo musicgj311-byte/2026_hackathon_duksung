@@ -16,7 +16,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.hackathon.ansimmessagepractice.ui.theme.*
 
-/** 최종 시안 2p: 역할 선택 카드 2개 + 하단 안내 + 다음 버튼. */
 @Composable
 fun RoleSelectionScreen(onProtectedSelected: () -> Unit, onGuardianSelected: () -> Unit,
                         onBackClick: () -> Unit, changingRole: Boolean = false) {

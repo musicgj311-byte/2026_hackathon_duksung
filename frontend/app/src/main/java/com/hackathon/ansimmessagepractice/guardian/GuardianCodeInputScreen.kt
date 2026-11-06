@@ -20,7 +20,7 @@ import com.hackathon.ansimmessagepractice.ui.theme.*
 import kotlinx.coroutines.launch
 
 /**
- * 최종 시안 8p: 6자리 코드 입력. 시연일 때만 서버 요청 대신 로컬 시뮬레이션을 합니다.
+ * 6자리 코드 입력. 시연일 때만 서버 요청 대신 로컬 시뮬레이션을 합니다.
  * showLater=false(홈에서 '가족 추가하기'로 들어온 경우)면 시안처럼 '연결 요청' 버튼만 표시합니다.
  */
 @Composable

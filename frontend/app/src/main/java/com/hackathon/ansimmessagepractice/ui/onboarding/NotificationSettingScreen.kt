@@ -21,7 +21,6 @@ import androidx.compose.ui.unit.dp
 import com.hackathon.ansimmessagepractice.guardian.DemoPairing
 import com.hackathon.ansimmessagepractice.ui.theme.*
 
-/** 최종 시안 27p: 알림 방식 라디오 4줄 + 기본 정보(언어·보호자·권한) + 하단 저장 버튼. */
 @Composable
 fun NotificationSettingsScreen(currentType: String, currentLanguage: String,
                                onBackClick: () -> Unit, onSaveClick: (String, String) -> Unit,
@@ -105,7 +104,6 @@ fun NotificationSettingsScreen(currentType: String, currentLanguage: String,
             SettingsDetailRow("보호자", displayedGuardian, onGuardianClick)
             SettingsDetailRow("권한", permissionsLabel, onPermissionClick,
                 valueColor = if (allPermissions) AnsimProtected else AnsimDangerText, valueBold = true)
-            // 시안에는 없지만 2p의 '설정에서 언제든 바꿀 수 있어요' 약속을 지키기 위해 역할 변경 줄을 둡니다.
             SettingsDetailRow("사용 역할", "보호받는 분", onChangeRoleClick)
             if (showDeveloperTools) {
                 SettingsDetailRow("개발자 도구", "서버 연결 테스트", onBackendClick)

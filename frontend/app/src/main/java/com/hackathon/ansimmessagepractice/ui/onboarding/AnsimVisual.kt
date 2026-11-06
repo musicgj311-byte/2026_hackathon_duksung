@@ -24,7 +24,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.hackathon.ansimmessagepractice.ui.theme.*
 
-/** 공통 버튼/선택 행 — 시안의 치수(높이 56, 완전 둥근 모서리, 18px 굵은 글자)를 한곳에서 관리합니다. */
 @Composable
 internal fun AnsimPrimaryButton(
     text: String, onClick: () -> Unit, enabled: Boolean = true,
@@ -49,7 +48,6 @@ internal fun AnsimPrimaryButton(
     }
 }
 
-/** 흰 바탕 + 회색 테두리 버튼 (새 코드 받기, 이전, 연락처에서 선택 등) */
 @Composable
 internal fun AnsimOutlineButton(
     text: String, onClick: () -> Unit, modifier: Modifier = Modifier,
@@ -72,7 +70,6 @@ internal fun AnsimOutlineButton(
     }
 }
 
-/** 밑줄 글자 버튼 (나중에 설정할게요, 나중에 연결할게요) */
 @Composable
 internal fun AnsimTextLink(
     text: String, onClick: () -> Unit, modifier: Modifier = Modifier,
@@ -85,7 +82,6 @@ internal fun AnsimTextLink(
     }
 }
 
-/** 시안의 라디오: 지름 22dp, 1.5dp 링, 선택 시 12.5dp 파란 점 */
 @Composable
 internal fun AnsimRadio(selected: Boolean, modifier: Modifier = Modifier) {
     Canvas(modifier.size(22.dp)) {
@@ -96,7 +92,6 @@ internal fun AnsimRadio(selected: Boolean, modifier: Modifier = Modifier) {
     }
 }
 
-/** 시안 3p 선택 카드: 높이 64, 둥근 모서리 12, 선택 시 2dp 파란 테두리 + 연파랑 배경 */
 @Composable
 internal fun AnsimChoiceRow(text: String, selected: Boolean, onClick: () -> Unit) {
     Row(
@@ -114,7 +109,6 @@ internal fun AnsimChoiceRow(text: String, selected: Boolean, onClick: () -> Unit
     }
 }
 
-/** 설정·관리 화면 상단: 높이 56, ‹ 아이콘 + 18px 제목, 아래 1dp 구분선 */
 @Composable
 internal fun AnsimTopBar(title: String, onBack: () -> Unit, background: Color = Color.White) {
     Column(Modifier.fillMaxWidth().background(background)) {
@@ -131,7 +125,6 @@ internal fun AnsimTopBar(title: String, onBack: () -> Unit, background: Color = 
     }
 }
 
-/** 회색 안내 박스 + ⓘ 아이콘 (7p·8p) */
 @Composable
 internal fun AnsimInfoBox(text: String, modifier: Modifier = Modifier) {
     Row(modifier.fillMaxWidth().background(AnsimCream, RoundedCornerShape(12.dp))
@@ -142,10 +135,6 @@ internal fun AnsimInfoBox(text: String, modifier: Modifier = Modifier) {
     }
 }
 
-/**
- * 시안 15p·24p 하단 시트: 화면 위 반투명 어두운 막 + 위 모서리 20의 흰 시트.
- * 화면 전체를 덮는 Box 안(가장 마지막 자식)에 두어야 합니다.
- */
 @Composable
 internal fun AnsimBottomSheet(onDismiss: () -> Unit, content: @Composable ColumnScope.() -> Unit) {
     androidx.activity.compose.BackHandler(onBack = onDismiss)

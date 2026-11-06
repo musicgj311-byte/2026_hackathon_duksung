@@ -31,7 +31,7 @@ import androidx.compose.foundation.shape.CircleShape
 import com.hackathon.ansimmessagepractice.ui.theme.*
 import kotlinx.coroutines.launch
 
-/** 최종 시안 p.34. 원문은 표시하지 않으며 실제 서버 알림만 목록에 표시합니다. */
+/** 원문은 표시하지 않으며 실제 서버 알림만 목록에 표시합니다. */
 @Composable
 fun GuardianHomeScreen(onInputCode: () -> Unit, onManualCall: () -> Unit,
                        onChangeRole: () -> Unit, onNotificationSettings: () -> Unit,

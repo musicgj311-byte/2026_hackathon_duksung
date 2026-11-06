@@ -42,10 +42,6 @@ fun AnsimMessagePracticeTheme(
     )
 }
 
-/**
- * 파랑·빨강 전체 배경 화면에서는 상태 표시줄 아이콘을 흰색으로, 화면을 벗어나면 원래대로 되돌립니다.
- * 시안은 상태 표시줄 없이 그려져 있으므로 배경색이 상태 표시줄 영역까지 이어지게 합니다.
- */
 @Composable
 fun StatusBarIcons(light: Boolean) {
     val view = LocalView.current

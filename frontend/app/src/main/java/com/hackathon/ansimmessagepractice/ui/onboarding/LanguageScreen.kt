@@ -11,7 +11,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.hackathon.ansimmessagepractice.ui.theme.*
 
-/** 최종 시안 4p: 구분선 목록(행 높이 64) + 하단 '이전 / 다음' (1 : 1.74). */
 @Composable
 fun LanguageScreen(selectedLanguage: String, onLanguageSelected: (String) -> Unit,
                    onNextClick: () -> Unit, onBackClick: () -> Unit) {

@@ -29,7 +29,6 @@ import androidx.compose.ui.unit.sp
 import com.hackathon.ansimmessagepractice.ui.theme.*
 
 /**
- * 시안 8p 코드 입력: 하나의 입력창 + 6개 칸(48×60, 간격 8, 회색 1dp 테두리, 현재 칸은 2dp 파랑).
  * 붙여넣기, 연속 입력, 삭제에 모두 대응합니다.
  */
 @Composable
@@ -68,7 +67,6 @@ fun SixDigitCodeField(value: String, onValueChange: (String) -> Unit, modifier: 
 }
 
 /**
- * 시안 7p·10p 코드 표시: 흰 칸(테두리 없음, 높이 56, 간격 10) + 32px 굵은 숫자.
  * expired=true면 숫자를 회색 취소선으로 표시합니다.
  */
 @Composable

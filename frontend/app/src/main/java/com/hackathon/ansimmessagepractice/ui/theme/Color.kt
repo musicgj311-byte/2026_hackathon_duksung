@@ -2,7 +2,6 @@ package com.hackathon.ansimmessagepractice.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// 최종 시안(PDF)에서 직접 추출한 색상입니다. 기존 컴포넌트 호환을 위해 기존 변수 이름도 유지합니다.
 
 /** 브랜드 파랑: 기본 버튼, 진행 표시줄, 선택 테두리 */
 val AnsimBlue = Color(0xFF1B4EA1)

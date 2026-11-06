@@ -25,9 +25,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /**
- * 최종 시안 7p(코드 표시)·10p(코드 만료). 실제 API 호출과 로컬 시연 코드를 구분합니다.
  * 시연 모드에서는 한 휴대폰으로 진행해야 하므로 '보호자가 입력하기를 기다리고 있어요' 줄을 누르면
- * 보호자 등록 확인 화면(9p)으로 넘어갑니다.
+ * 보호자 등록 확인 화면으로 넘어갑니다.
  */
 @Composable
 fun ProtectedPairingScreen(onBack: () -> Unit, onLater: () -> Unit,
@@ -120,7 +119,6 @@ fun ProtectedPairingScreen(onBack: () -> Unit, onLater: () -> Unit,
     }
 }
 
-/** 시안 7p 회색 코드 카드: 위 26 · 라벨 · 15 · 숫자칸 56 · 14 · 남은 시간 · 아래 27 */
 @Composable
 private fun PairingCodeCard(ticket: PairingTicket?, expired: Boolean, remaining: Long, busy: Boolean) {
     Column(Modifier.fillMaxWidth().background(AnsimCream, RoundedCornerShape(16.dp))
@@ -149,7 +147,7 @@ private fun PairingCodeCard(ticket: PairingTicket?, expired: Boolean, remaining:
     }
 }
 
-/** 최종 시안 9p: 연결 요청 승인 화면. 시연 모드에서는 로컬 데이터만 저장합니다. */
+/** 연결 요청 승인 화면. 시연 모드에서는 로컬 데이터만 저장합니다. */
 @Composable
 fun DemoGuardianApprovalScreen(onApprove: () -> Unit, onReject: () -> Unit) {
     OnboardingPage(bottom = {
@@ -181,7 +179,7 @@ private fun DemoApprovalRow(label: String, value: String) {
     HorizontalDivider(color = AnsimDivider, thickness = 1.dp)
 }
 
-/** 최종 시안 11p 연결 완료: 체크 아이콘 · 제목 · 아이콘 3줄 · 홈으로 */
+/** 연결 완료: 체크 아이콘 · 제목 · 아이콘 3줄 · 홈으로 */
 @Composable
 fun GuardianConnectedScreen(onHome: () -> Unit, demo: Boolean = false) {
     val guardianName = DemoPairing.GUARDIAN_NAME.substringBefore(" (")

@@ -32,7 +32,6 @@ import androidx.lifecycle.LifecycleEventObserver
 import com.hackathon.ansimmessagepractice.ui.theme.*
 
 /**
- * 최종 시안 5~6p. 시안에는 필수 2개로 그려져 있지만 실제로 필요한 필수 권한은 3개입니다.
  *  필수: 알림 읽기 · 다른 앱 위에 표시 · 경고 알림 표시(POST_NOTIFICATIONS)
  *  선택: 배터리 최적화 제외 (설정에서 들어온 경우에만 연락처 확인도 함께 표시)
  */
@@ -110,8 +109,7 @@ fun PermissionScreen(onNextClick: () -> Unit, onBackClick: () -> Unit,
         return
     }
 
-    if (ready) {
-        // 시안 6p: 완료 화면
+    if (ready) { // 완료 화면
         OnboardingPage(bottom = { AnsimPrimaryButton("다음", onNextClick) }) {
             OnboardingStepHeader(3, onBackClick)
             Spacer(Modifier.height(47.dp))
@@ -135,7 +133,7 @@ fun PermissionScreen(onNextClick: () -> Unit, onBackClick: () -> Unit,
         return
     }
 
-    // 시안 5p: 권한 요청 화면
+    // 권한 요청 화면
     OnboardingPage(bottomPadding = 16.dp, bottom = {
         Text("필수 권한을 모두 허용하면 다음으로 넘어가요", Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center, style = AnsimType.Body, color = AnsimMuted)
@@ -163,7 +161,6 @@ fun PermissionScreen(onNextClick: () -> Unit, onBackClick: () -> Unit,
     }
 }
 
-/** 시안 5p 한 줄: 제목 17px 굵게 + 필수/선택 꼬리표, 설명 15px, 오른쪽에 상태/버튼. */
 @Composable
 private fun PermissionLine(title: String, detail: String, required: Boolean,
                            granted: Boolean, onClick: () -> Unit) {
@@ -190,7 +187,7 @@ private fun PermissionLine(title: String, detail: String, required: Boolean,
                 contentAlignment = Alignment.Center) {
                 Text("허용하기", style = ansimStyle(15, 22, FontWeight.Bold), color = Color.White)
             }
-            // 선택 권한은 시안처럼 파란 밑줄 '나중에'로 표시하고, 누르면 해당 설정을 엽니다.
+            // 선택 권한은 파란 밑줄 '나중에'로 표시하고, 누르면 해당 설정을 엽니다.
             else -> Text("나중에", Modifier.clickable(role = Role.Button, onClick = onClick).padding(vertical = 8.dp),
                 style = ansimStyle(15, 22, FontWeight.SemiBold), color = AnsimBlue,
                 textDecoration = TextDecoration.Underline)

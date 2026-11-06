@@ -21,7 +21,7 @@ import com.hackathon.ansimmessagepractice.ui.theme.*
 import java.util.Calendar
 
 /**
- * 최종 시안 15p '보호자 관리' + 연결 해제 하단 시트.
+ * '보호자 관리' + 연결 해제 하단 시트.
  * 시연 연결(DemoPairing)과 이 휴대폰에 저장한 전화번호를 구분해서 표시합니다.
  * 저장한 번호만 있는 경우 '연결 해제'는 이 휴대폰의 번호만 지우며 서버 연결은 건드리지 않습니다.
  */

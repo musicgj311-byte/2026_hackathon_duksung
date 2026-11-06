@@ -73,7 +73,7 @@ object WarningNotification {
             details, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         val danger = level == "danger"
         val kakao = source == "kakao"
-        // PDF p.21: 시스템 알림은 짧은 경고만 표시. 상세 시안(p.16~18)은 앱 화면/오버레이에서 구현.
+        // 시스템 알림은 짧은 경고만 표시. 상세 시안(p.16~18)은 앱 화면/오버레이에서 구현.
         val link = com.hackathon.ansimmessagepractice.ui.warning.isLinkScam(scamType, danger)
         val koreanTitle = when {
             level == "timeout" -> "문자 확인을 완료하지 못했어요"
@@ -104,7 +104,7 @@ object WarningNotification {
             else -> "${foreign.headline(danger, link).substringAfter("\n")}\n$koreanBody"
         }
         val channel = if (danger) CHANNEL else CAUTION_CHANNEL
-        // 시안 22p: 잠금화면 알림 제목을 빨간 굵은 글씨로 표시합니다(런처가 지원하는 경우).
+        // 잠금화면 알림 제목을 빨간 굵은 글씨로 표시합니다(런처가 지원하는 경우).
         val styledTitle: CharSequence = if (danger) android.text.SpannableString(title).apply {
             setSpan(android.text.style.ForegroundColorSpan(Color.rgb(192, 38, 46)), 0, length, 0)
             setSpan(android.text.style.StyleSpan(android.graphics.Typeface.BOLD), 0, length, 0)

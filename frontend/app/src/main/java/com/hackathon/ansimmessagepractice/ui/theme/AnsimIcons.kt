@@ -13,10 +13,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.size
 
-/**
- * 시안에 쓰인 선형 아이콘(Lucide 계열, 24 격자·2px 선·둥근 끝)을 그대로 옮긴 벡터 모음입니다.
- * 이모지/특수문자(☎, ⚠, ✓ 등)는 기기마다 모양이 달라 시안과 어긋나므로 이 아이콘으로 대체합니다.
- */
+
 object AnsimIcons {
     private fun circle(cx: Float, cy: Float, r: Float) =
         "M${cx - r} ${cy}a$r $r 0 1 0 ${2 * r} 0a$r $r 0 1 0 ${-2 * r} 0"
@@ -84,7 +81,6 @@ object AnsimIcons {
     val Plus: ImageVector by lazy { icon("plus", "M5 12h14", "M12 5v14") }
 }
 
-/** 선형 아이콘 한 개. 크기는 24 격자 아이콘의 바깥 크기(dp)입니다. */
 @Composable
 fun AnsimIcon(icon: ImageVector, tint: Color, size: Dp = 24.dp, modifier: Modifier = Modifier,
               contentDescription: String? = null) {

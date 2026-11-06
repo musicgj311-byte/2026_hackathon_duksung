@@ -29,7 +29,7 @@ import com.hackathon.ansimmessagepractice.ui.onboarding.AnsimPrimaryButton
 import com.hackathon.ansimmessagepractice.ui.onboarding.AnsimTopBar
 import com.hackathon.ansimmessagepractice.ui.theme.*
 
-/** 최종 시안 26p: 모르는 번호가 아닌, 사용자가 직접 아는 가족 번호로 거는 안전한 대체 경로. */
+/** 모르는 번호가 아닌, 사용자가 직접 아는 가족 번호로 거는 안전한 대체 경로. */
 @Composable
 fun ManualCallScreen(onBackClick: () -> Unit) {
     val context = LocalContext.current

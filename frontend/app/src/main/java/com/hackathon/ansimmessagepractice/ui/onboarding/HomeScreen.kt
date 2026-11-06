@@ -30,11 +30,6 @@ import com.hackathon.ansimmessagepractice.detection.AlertRecord
 import java.util.concurrent.TimeUnit
 import com.hackathon.ansimmessagepractice.ui.theme.*
 
-/**
- * 최종 시안 12p(정상) · 13p(보호자 없음) · 14p(필수 권한 꺼짐 → 보호 중단).
- * guardianConnected=null은 백엔드 조회 전이며, 로컬 전화번호로 서버 연결을 추측하지 않습니다.
- * 상단 '안심문자' 로고를 5번 누르면 프론트엔드 확인용 시연 메뉴가 열립니다(평상시 숨김).
- */
 @Composable
 fun HomeScreen(
     selectedType: String, selectedLanguage: String,
@@ -252,7 +247,6 @@ private fun formatPhone(raw: String): String {
     }
 }
 
-/** 홈 카드: 흰 바탕, 1dp 연회색 테두리, 모서리 16, 좌우 20 */
 @Composable
 private fun HomeCard(
     background: Color = Color.White, border: Color = AnsimDivider, borderWidth: Dp = 1.dp,
@@ -288,7 +282,6 @@ private fun StatusRow(title: String, granted: Boolean) {
     HorizontalDivider(color = Color(0xFFF1E5E5), thickness = 1.dp)
 }
 
-/** 최근 알림 한 줄: 위험/주의 배지 + 제목 17px + 오른쪽 시간 */
 @Composable
 internal fun AlertLine(level: String, title: String, time: String, onClick: () -> Unit) {
     Row(Modifier.fillMaxWidth().heightIn(min = 52.dp).clickable(onClick = onClick),
@@ -300,7 +293,6 @@ internal fun AlertLine(level: String, title: String, time: String, onClick: () -
     }
 }
 
-/** 위험(빨강)·주의(노랑) 배지: 높이 23, 모서리 6, 15px 굵게 */
 @Composable
 internal fun LevelBadge(level: String, text: String = level) {
     val danger = level == "위험"
