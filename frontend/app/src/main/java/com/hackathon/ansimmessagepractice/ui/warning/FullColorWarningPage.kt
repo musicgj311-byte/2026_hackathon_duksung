@@ -29,6 +29,10 @@ import com.hackathon.ansimmessagepractice.ui.theme.*
 private val CautionInk = Color(0xFF18191B)
 private val CautionBrown = Color(0xFF4C3801)
 
+/**
+ * 최종 시안 18p(위험) · 19p(주의): 기본 모드의 전체 화면 경고. 큰 제목은 시안 54px.
+ * 원형 포인트는 시안 측정값(390dp 폭 기준)으로 그리고, 글자는 가리지 않습니다.
+ */
 @Composable
 internal fun FullColorWarningPage(
     data: WarningPayload,
@@ -185,6 +189,7 @@ internal fun WarningPill(
     }
 }
 
+/** 밑줄 없는 글자 버튼 (닫기) */
 @Composable
 internal fun WarningTextButton(label: String, onClick: () -> Unit, color: Color, style: TextStyle = AnsimType.Body) {
     Box(Modifier.fillMaxWidth().heightIn(min = 44.dp).clickable(role = Role.Button, onClick = onClick),
@@ -193,12 +198,17 @@ internal fun WarningTextButton(label: String, onClick: () -> Unit, color: Color,
     }
 }
 
+/** 흰 바탕 + 회색 테두리 둥근 버튼 (다시 듣기, 신고하기, 닫기 등) */
 @Composable
 internal fun WarningOutline(label: String, onClick: () -> Unit, height: Dp = 52.dp, modifier: Modifier = Modifier,
                             icon: ImageVector? = null, enabled: Boolean = true,
                             style: TextStyle = ansimStyle(17, 24, FontWeight.Bold)) =
     WarningPill(label, onClick, Color.White, AnsimInk, height, modifier, icon, enabled, style, border = AnsimBorder)
 
+/**
+ * 최종 시안 20p: 확인 지연은 노란 상단 영역 + 주황 선 + 안내 카드 + 하단 재확인 버튼.
+ * foreign != null 이면 선택 언어 문장 아래에 한국어를 함께 표시합니다.
+ */
 @Composable
 internal fun TimeoutWarningPage(onRetry: () -> Unit, onCall: () -> Unit, onClose: () -> Unit,
                                 callLabel: String = "가족에게 전화해서 확인", foreign: ForeignCopy? = null) {
@@ -248,6 +258,7 @@ internal fun TimeoutWarningPage(onRetry: () -> Unit, onCall: () -> Unit, onClose
     }
 }
 
+/** 빨간(위험) 또는 노란(주의) 상단 머리 영역 (23p·31p·32p 공통) */
 @Composable
 private fun RedHeader(top: Dp, bottom: Dp, danger: Boolean = true, content: @Composable ColumnScope.() -> Unit) {
     StatusBarIcons(light = danger)
@@ -280,10 +291,14 @@ private fun GrayQuote(label: String, body: String, labelColor: Color = AnsimMute
     }
 }
 
+/**
+ * 최종 시안 31p: 소리 우선 모드의 음성 읽기 경고. 주의 단계는 노란 머리 영역으로 표시합니다.
+ * quote는 실제로 소리로 읽어 주는 문장과 같아야 합니다.
+ */
 @Composable
 internal fun VoiceGuidedWarningPage(
     data: WarningPayload, callLabel: String, onCall: () -> Unit,
-    onReplay: () -> Unit, replayEnabled: Boolean, quote: String = ""
+    onReplay: () -> Unit, replayEnabled: Boolean, quote: String = "", onClose: () -> Unit = {}
 ) {
     val danger = data.level == "danger"
     val link = isLinkScam(data.scamType, danger)
@@ -305,10 +320,17 @@ internal fun VoiceGuidedWarningPage(
             Spacer(Modifier.height(16.dp))
             WarningOutline("다시 듣기", onReplay, 60.dp, icon = AnsimIcons.RotateCcw, enabled = replayEnabled,
                 style = ansimStyle(18, 24, FontWeight.Bold))
+            // 화면 읽기로 버튼을 차례로 훑는 사용자도 뒤로 가기 없이 나갈 수 있도록 닫기를 둡니다.
+            Spacer(Modifier.height(16.dp))
+            WarningOutline("닫기", onClose, 60.dp, style = ansimStyle(18, 24, FontWeight.Bold))
         }
     }
 }
 
+/**
+ * 최종 시안 32p 이중언어 경고(베트남어 시안을 영어·중국어에도 적용).
+ * 선택 언어 문장을 크게, 그 아래 한국어를 작게 보여줍니다. 위험=빨강, 주의=노랑.
+ */
 @Composable
 internal fun BilingualWarningPage(
     data: WarningPayload, preview: Boolean, copy: ForeignCopy, isKakao: Boolean,
@@ -371,6 +393,7 @@ internal fun BilingualWarningPage(
     }
 }
 
+/** 최종 시안 23p: 카카오톡은 시스템 번호 차단 대신 대화방 차단 안내를 표시합니다. */
 @Composable
 internal fun KakaoWarningPage(
     data: WarningPayload, preview: Boolean, callLabel: String, onCall: () -> Unit,
@@ -434,6 +457,10 @@ internal fun KakaoWarningPage(
     }
 }
 
+/**
+ * 음성 안내 모드의 확인 지연. 31p 음성 화면 구조에 20p 노란 색을 적용합니다.
+ * quote는 실제로 소리로 읽는 문장과 같아야 합니다.
+ */
 @Composable
 internal fun VoiceTimeoutPage(
     quote: String, onRetry: () -> Unit, onCall: () -> Unit, onReplay: () -> Unit,

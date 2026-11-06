@@ -2,6 +2,12 @@ package com.hackathon.ansimmessagepractice.ui.warning
 
 /**
  * 경고 화면·오버레이·알림에서 함께 쓰는 고정 문구 모음.
+ *
+ * - 큰 제목은 서버 title 대신 여기의 짧은 행동 문장을 씁니다(시안 18·19·23·31·32p).
+ *   서버 title은 길이가 일정하지 않아 54px 큰 글씨에서 여러 줄로 깨지기 때문입니다.
+ *   서버의 explanation / action 은 그대로 본문에 표시합니다.
+ * - 사기 유형에 따라 '돈을 보내지 마세요'(송금 유도형)와 '링크를 누르지 마세요'(링크 유도형)를 나눕니다.
+ * - 외국어 화면은 시안 32p처럼 '선택 언어 + 한국어'를 함께 보여줍니다.
  */
 
 /** 링크를 누르게 하는 유형인지 (택배·부고·지원금·결제 알림). 나머지는 송금·정보 요구형으로 봅니다. */
@@ -72,7 +78,8 @@ internal data class ForeignCopy(
     val call: String,
     val ask: String,
     val sms: String,
-    val videoCall: String,
+    /** 화면 안내 모드 두 번째 버튼: 기본 전화 앱을 여는 일반 전화 */
+    val phoneCheck: String,
     val close: String,
     val details: String,
     val timeoutEyebrow: String,
@@ -106,7 +113,7 @@ internal fun foreignCopy(languageCode: String): ForeignCopy? = when (languageCod
         shortScam = "Scam message.", shortCareful = "Be careful.",
         received = "Received message", receivedKakao = "Received KakaoTalk",
         call = "Call your family", ask = "Ask your family", sms = "Text your family",
-        videoCall = "Check by video call", close = "Close", details = "Details",
+        phoneCheck = "Check by phone", close = "Close", details = "Details",
         timeoutEyebrow = "Check delayed", timeoutTitle = "We couldn't finish\nchecking",
         timeoutBody = "The network is unstable. We don't know yet if this message is safe.",
         timeoutWarn = "Until it's checked, don't tap links or send money.",
@@ -125,7 +132,7 @@ internal fun foreignCopy(languageCode: String): ForeignCopy? = when (languageCod
         shortScam = "Lừa đảo.", shortCareful = "Hãy cẩn thận.",
         received = "Tin nhắn nhận được", receivedKakao = "Tin nhắn KakaoTalk nhận được",
         call = "Gọi cho gia đình", ask = "Hỏi gia đình", sms = "Nhắn tin cho gia đình",
-        videoCall = "Kiểm tra bằng gọi video", close = "Đóng", details = "Xem chi tiết",
+        phoneCheck = "Gọi điện để kiểm tra", close = "Đóng", details = "Xem chi tiết",
         timeoutEyebrow = "Chậm kiểm tra", timeoutTitle = "Chưa thể kiểm tra\nxong",
         timeoutBody = "Kết nối mạng không ổn định. Chưa biết tin nhắn này có an toàn không.",
         timeoutWarn = "Trước khi kiểm tra xong, đừng nhấn liên kết hoặc chuyển tiền.",
@@ -144,7 +151,7 @@ internal fun foreignCopy(languageCode: String): ForeignCopy? = when (languageCod
         shortScam = "诈骗短信。", shortCareful = "请小心。",
         received = "收到的短信", receivedKakao = "收到的KakaoTalk消息",
         call = "给家人打电话", ask = "问问家人", sms = "给家人发短信",
-        videoCall = "用视频通话确认", close = "关闭", details = "查看详情",
+        phoneCheck = "打电话确认", close = "关闭", details = "查看详情",
         timeoutEyebrow = "检查延迟", timeoutTitle = "未能完成\n检查",
         timeoutBody = "网络不稳定，暂时无法确定这条短信是否安全。",
         timeoutWarn = "确认之前，请不要点击链接或转账。",
