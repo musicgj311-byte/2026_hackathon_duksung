@@ -31,6 +31,7 @@ import java.util.concurrent.TimeUnit
 import com.hackathon.ansimmessagepractice.ui.theme.*
 
 /**
+ * 최종 시안 12p(정상) · 13p(보호자 없음) · 14p(필수 권한 꺼짐 → 보호 중단).
  * guardianConnected=null은 백엔드 조회 전이며, 로컬 전화번호로 서버 연결을 추측하지 않습니다.
  * 상단 '모두안심' 로고를 5번 누르면 프론트엔드 확인용 시연 메뉴가 열립니다(평상시 숨김).
  */
@@ -51,6 +52,7 @@ fun HomeScreen(
     var notification by remember { mutableStateOf(PermissionStatus.notificationAccess(context)) }
     var overlay by remember { mutableStateOf(PermissionStatus.overlay(context)) }
     var postNotifications by remember { mutableStateOf(PermissionStatus.postNotifications(context)) }
+    var contacts by remember { mutableStateOf(PermissionStatus.contacts(context)) }
     var recentAlerts by remember { mutableStateOf(AlertStore.list(context)) }
     var showDemo by remember { mutableStateOf(false) }
     var demoTapCount by remember { mutableIntStateOf(0) }
@@ -64,6 +66,7 @@ fun HomeScreen(
                 notification = PermissionStatus.notificationAccess(context)
                 overlay = PermissionStatus.overlay(context)
                 postNotifications = PermissionStatus.postNotifications(context)
+                contacts = PermissionStatus.contacts(context)
                 recentAlerts = AlertStore.list(context)
                 savedPhone = GuardianCall.savedNumber(context)
                 savedName = GuardianCall.savedName(context)
@@ -82,7 +85,8 @@ fun HomeScreen(
         shared.registerOnSharedPreferenceChangeListener(callback)
         onDispose { shared.unregisterOnSharedPreferenceChangeListener(callback) }
     }
-    val ready = notification && overlay && postNotifications
+    // 연락처 권한이 없으면 모르는 번호의 문자를 서버 검사로 보내지 못하므로 필수 권한으로 봅니다.
+    val ready = notification && overlay && postNotifications && contacts
     val demo = DemoPairing.enabled(context)
     val demoLinked = DemoPairing.approved(context)
     val linked = guardianConnected == true || demoLinked
@@ -98,6 +102,7 @@ fun HomeScreen(
     val guardianPhone = if (demoLinked && !hasPhone) DemoPairing.GUARDIAN_PHONE else formatPhone(savedPhone)
 
     Column(Modifier.fillMaxSize().background(AnsimCream).statusBarsPadding().navigationBarsPadding()) {
+        // 상단: 흰 바탕 56dp + 구분선, 방패 아이콘 + '모두안심', 오른쪽 설정 아이콘
         Column(Modifier.fillMaxWidth().background(Color.White)) {
             Row(Modifier.fillMaxWidth().height(56.dp), verticalAlignment = Alignment.CenterVertically) {
                 Row(
@@ -138,6 +143,7 @@ fun HomeScreen(
                     StatusRow("알림 읽기", notification)
                     StatusRow("다른 앱 위에 표시", overlay)
                     StatusRow("경고 알림 표시", postNotifications)
+                    StatusRow("연락처 확인", contacts)
                     Spacer(Modifier.height(14.dp))
                     AnsimPrimaryButton("권한 다시 설정", onPermissionClick, container = AnsimDanger,
                         height = 48.dp, textStyle = AnsimType.ButtonSmall)
