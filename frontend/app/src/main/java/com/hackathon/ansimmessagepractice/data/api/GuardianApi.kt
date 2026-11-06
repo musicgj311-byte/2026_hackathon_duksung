@@ -9,6 +9,7 @@ import java.time.Instant
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import java.time.ZoneId
+import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 
 /**
@@ -32,16 +33,30 @@ data class GuardianNotificationRecord(
 private fun JSONObject.nonBlankString(key: String): String? =
     if (has(key) && !isNull(key)) optString(key).trim().takeIf { it.isNotEmpty() && it != "null" } else null
 
+/**
+ * 서버 시각 → Instant. 서버는 UTC로 저장하지만 SQLite에서 다시 읽은 값은 시간대 표시 없이
+ * ("2026-11-06T11:53:00.123456") 내려옵니다. 이 값을 휴대폰 현지 시각으로 읽으면 한국에서 9시간 어긋나므로 UTC로 봅니다.
+ */
+internal fun parseServerInstant(value: String?): Instant? {
+    if (value.isNullOrBlank()) return null
+    return runCatching { OffsetDateTime.parse(value).toInstant() }
+        .recoverCatching { Instant.parse(value) }
+        .recoverCatching { LocalDateTime.parse(value).toInstant(ZoneOffset.UTC) }
+        .getOrNull()
+}
+
 /** 서버 이벤트가 아직 등록되지 않았거나 필드가 없을 때 임의의 시각을 만들지 않습니다. */
 fun formatGuardianEventTime(value: String?): String {
-    if (value.isNullOrBlank()) return "기록 없음"
-    val fmt = DateTimeFormatter.ofPattern("M월 d일 HH:mm")
-    val local = runCatching { OffsetDateTime.parse(value).atZoneSameInstant(ZoneId.systemDefault()).toLocalDateTime() }
-        .recoverCatching { Instant.parse(value).atZone(ZoneId.systemDefault()).toLocalDateTime() }
-        .recoverCatching { LocalDateTime.parse(value) }
-        .getOrNull()
-    return local?.format(fmt) ?: "기록 없음"
+    val instant = parseServerInstant(value) ?: return "기록 없음"
+    return instant.atZone(ZoneId.systemDefault()).toLocalDateTime()
+        .format(DateTimeFormatter.ofPattern("M월 d일 HH:mm"))
 }
+
+/** GET /guardian/{id}/incidents 의 사건 한 건 (알림 기록과 짝지어 '위험 문자 수신'·'경고 화면 표시' 시각에 씀) */
+internal data class GuardianIncident(
+    val id: Int?, val protectedId: String, val level: String, val scamType: String,
+    val receivedRaw: String, val receivedAt: Instant, val warningShownRaw: String?
+)
 
 /** 서버의 영어 수법 코드는 절대로 이용자에게 그대로 보여주지 않습니다. */
 fun guardianScamTypeName(type: String): String = when (
@@ -65,6 +80,8 @@ object GuardianApi {
         val id = Uri.encode(AnsimDeviceId.value(context, "guardian"))
         val response = BackendApi.request(context, "GET", "/guardian/$id/notifications")
         val items = response.getJSONArray("notifications")
+        // 알림 기록에는 사건 시각이 없어서 사건 타임라인을 함께 받아 짝지어 줍니다. 실패해도 알림 목록은 그대로 보여 줍니다.
+        val incidents = runCatching { incidents(context, id) }.getOrDefault(emptyList())
         return (0 until items.length()).map { i ->
             val item = items.getJSONObject(i)
             val incident = item.optJSONObject("incident")
@@ -84,8 +101,47 @@ object GuardianApi {
                 protectedName = item.nonBlankString("protected_name")
                     ?: item.optJSONObject("protected_user")?.nonBlankString("name"),
                 explanation = item.nonBlankString("explanation")
+            ).withIncident(item.optString("protected_device_id"), incidents)
+        }
+    }
+
+    private suspend fun incidents(context: Context, encodedGuardianId: String): List<GuardianIncident> {
+        val list = BackendApi.request(context, "GET", "/guardian/$encodedGuardianId/incidents")
+            .optJSONArray("incidents") ?: return emptyList()
+        return (0 until list.length()).mapNotNull { i ->
+            val item = list.optJSONObject(i) ?: return@mapNotNull null
+            val raw = item.nonBlankString("received_at") ?: return@mapNotNull null
+            val at = parseServerInstant(raw) ?: return@mapNotNull null
+            GuardianIncident(
+                id = if (item.has("incident_id") && !item.isNull("incident_id")) item.optInt("incident_id") else null,
+                protectedId = item.optString("protected_device_id"),
+                level = item.optString("level"),
+                scamType = item.optString("scam_type"),
+                receivedRaw = raw, receivedAt = at,
+                warningShownRaw = findWarningShownAt(item.optJSONArray("events"))
             )
         }
+    }
+
+    /**
+     * 서버는 위험 사건을 저장한 직후 보호자 알림을 보내므로, 같은 가족·위험도·수법이면서
+     * 알림 직전 2분 안에 생긴 사건 중 가장 가까운 것을 그 알림의 사건으로 봅니다. 없으면 '기록 없음' 그대로 둡니다.
+     */
+    private fun GuardianNotificationRecord.withIncident(
+        protectedId: String, incidents: List<GuardianIncident>
+    ): GuardianNotificationRecord {
+        if (incidentCreatedAt != null && warningShownAt != null) return this
+        val sent = parseServerInstant(sentAt) ?: return this
+        val match = incidents.filter {
+            it.protectedId == protectedId && it.level == level && it.scamType == scamType &&
+                    !it.receivedAt.isAfter(sent.plusSeconds(5)) &&
+                    !it.receivedAt.isBefore(sent.minusSeconds(120))
+        }.maxByOrNull { it.receivedAt } ?: return this
+        return copy(
+            incidentId = incidentId ?: match.id,
+            incidentCreatedAt = incidentCreatedAt ?: match.receivedRaw,
+            warningShownAt = warningShownAt ?: match.warningShownRaw
+        )
     }
 
     /** 사건별 이벤트 배열이 함께 올 때 warning_shown만 선택. 다른 이벤트/전송 시각으로 대체 금지. */
