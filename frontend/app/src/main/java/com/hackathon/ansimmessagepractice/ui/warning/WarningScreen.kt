@@ -332,7 +332,8 @@ fun WarningScreen(
         } else if (voiceMode && (danger || caution)) {
             VoiceGuidedWarningPage(
                 data = data, callLabel = if (danger) "${who}에게 직접 전화하기" else "가족에게 물어보기", onCall = call,
-                onReplay = { speak() }, replayEnabled = ttsReady || screenReader, quote = voiceQuote
+                onReplay = { speak() }, replayEnabled = ttsReady || screenReader, quote = voiceQuote,
+                onClose = onCloseClick
             )
         } else if (danger || caution) {
             FullColorWarningPage(
@@ -578,6 +579,8 @@ fun WarningScreen(
 }
 
 /**
+ * 최종 시안 30p: 쉬운 안내는 큰 금지 그림 · 큰 한 문장 · 전화 버튼 하나.
+ * 시안에는 없지만 추가 요구 사항에 따라 아래에 '닫기' 버튼을 둡니다.
  * 외국어를 고른 경우 선택 언어 문장을 크게, 한국어를 그 아래에 작게 보여줍니다.
  */
 @Composable
@@ -654,6 +657,8 @@ private fun SimpleWarningPage(
 }
 
 /**
+ * 최종 시안 29p: 화면·진동 우선 모드. 큰 글씨 두 줄 + 문자/전화 버튼 두 개 + 닫기(추가 요구 사항).
+ * 시안의 '영상통화로 확인'은 기기마다 영상통화 연결 방법이 달라 실제 동작(기본 전화 앱 열기)에 맞춰 '전화로 확인'으로 표시합니다.
  * 외국어를 고른 경우 선택 언어 문장 + 한국어 한 줄을 함께 표시합니다.
  */
 @Composable
@@ -700,9 +705,9 @@ private fun HearingVisualWarningPage(
             WarningPill(foreign?.sms ?: smsLabel, onSms, Color.White, if (danger) AnsimDanger else Color(0xFF18191B), 68.dp,
                 style = ansimStyle(19, 26, FontWeight.Bold), secondLine = if (foreign != null) "가족에게 문자보내기" else null)
             Spacer(Modifier.height(10.dp))
-            WarningPill(foreign?.videoCall ?: "영상통화로 확인", onCall,
+            WarningPill(foreign?.phoneCheck ?: "전화로 확인", onCall,
                 if (danger) Color.White.copy(alpha = .15f) else Color(0xFFFFE5A8), ink, 54.dp,
-                style = ansimStyle(19, 26, FontWeight.Bold), secondLine = if (foreign != null) "영상통화로 확인" else null)
+                style = ansimStyle(19, 26, FontWeight.Bold), secondLine = if (foreign != null) "전화로 확인" else null)
             // 추가 요구 사항: 화면 안내 모드에도 닫기 버튼을 둡니다.
             Spacer(Modifier.height(6.dp))
             WarningTextButton(if (foreign != null) "${foreign.close} · 닫기" else "닫기", onClose, ink.copy(alpha = .9f),
@@ -758,7 +763,7 @@ private fun SimpleTimeoutPage(
     }
 }
 
-/** 화면 안내 모드의 확인 지연: 노란 색으로. 큰 글씨 + 다시 확인 / 문자 보내기 / 닫기 */
+/** 화면 안내 모드의 확인 지연: 29p 구조를 노란 색으로. 큰 글씨 + 다시 확인 / 문자 보내기 / 닫기 */
 @Composable
 private fun HearingTimeoutPage(
     onRetry: () -> Unit, onSms: () -> Unit, onClose: () -> Unit, smsLabel: String,
