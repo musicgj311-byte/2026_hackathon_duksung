@@ -34,6 +34,8 @@ SHORTENERS = {
 _TLDS = (
     "com|net|org|kr|me|ly|io|co|cc|xyz|top|info|shop|site|link|app|gl|do|so|be|to|ai"
     "|click|online|store|vip|club|live|icu|cn|ru|tk|ml|ga|cf|gq|ws|la|id|gy|at"
+    "|biz|pro|life|fun|work|buzz|sbs|cfd|cyou|rest|monster|asia|world|today|news|page"
+    "|example|test"  # 시연·테스트용 예약 도메인 (.example, .test)
 )
 _URL_RE = re.compile(
     r"https?://[^\s<>\"'가-힣]+"
@@ -49,10 +51,23 @@ _SECOND_LEVEL = {
 }  # fmt: skip
 
 
+# 링크 검사를 피하려고 'h t t p s : / /', 'hxxp', 'abc[.]com'처럼 쓴 주소를
+# 원래 모양으로 되돌립니다.
+_ZERO_WIDTH = re.compile("[\u200b-\u200f\u2060\ufeff]")
+_SPACED_SCHEME = re.compile(r"h\s*[tx]\s*[tx]\s*p\s*(s?)\s*:\s*/\s*/\s*", re.IGNORECASE)
+_DOT_TRICK = re.compile(r"\s*(?:\[\.\]|\(\.\)|\[dot\]|\(dot\))\s*", re.IGNORECASE)
+
+
+def deobfuscate_links(text: str) -> str:
+    text = _ZERO_WIDTH.sub("", text)
+    text = _SPACED_SCHEME.sub(lambda m: f"http{m.group(1).lower()}://", text)
+    return _DOT_TRICK.sub(".", text)
+
+
 def extract_urls(text: str) -> list[str]:
     """문자에서 링크를 찾아 http(s):// 형태로 돌려줍니다. 중복은 제거합니다."""
     found: list[str] = []
-    for m in _URL_RE.finditer(text):
+    for m in _URL_RE.finditer(deobfuscate_links(text)):
         url = m.group(0).rstrip(_TRAILING)
         if not url.lower().startswith(("http://", "https://")):
             url = "http://" + url

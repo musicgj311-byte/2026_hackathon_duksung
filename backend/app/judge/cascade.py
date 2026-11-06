@@ -9,6 +9,7 @@
    저장된 연락처는 최대 '주의' (악성 URL 목록에 걸린 경우만 위험)
    주의: 수법 의심만 있음 / LLM 시간 초과·실패인데 규칙·링크에 걸린 게 있음
          LLM은 '수법 없음'이지만 모르는 번호에서 사칭 + 요구가 보임
+         모르는 번호인데 글자를 깨뜨려 키워드를 숨긴 흔적이 보임
    안전해 보임: 그 외 (문구는 항상 고정 문구, '안전하다'고 단정하지 않음)
 """
 
@@ -50,7 +51,7 @@ def _decide_by_llm(
 ) -> Decision:
     if verdict is None:
         # LLM 실패·시간 초과: 규칙이나 링크에 걸린 게 하나라도 있으면 '주의', 아무것도 없으면 통과
-        if rules.scam_types or rules.pushes_action or fast.has_url:
+        if rules.scam_types or rules.pushes_action or rules.obfuscated or fast.has_url:
             return Decision(Level.caution, rules.top_type, stage=3, use_llm_text=False)
         return Decision(Level.safe, ScamType.none, stage=3, use_llm_text=False)
 
@@ -62,7 +63,7 @@ def _decide_by_llm(
         if demands or new_domain or unknown_link:
             return Decision(Level.danger, verdict.scam_type, stage=3, use_llm_text=True)
         return Decision(Level.caution, verdict.scam_type, stage=3, use_llm_text=True)
-    if rules.impersonation_with_demand and not from_contact:
+    if (rules.impersonation_with_demand or rules.obfuscated) and not from_contact:
         # LLM이 문자 속 문장에 속았을 가능성. 규칙 쪽 문구로 '주의'
         return Decision(Level.caution, rules.top_type, stage=3, use_llm_text=False)
     return Decision(Level.safe, ScamType.none, stage=3, use_llm_text=False)
@@ -107,7 +108,8 @@ async def run_detailed(req: JudgeRequest) -> tuple[JudgeResponse, Detail]:
             req.text,
             is_contact=req.is_contact,
             is_international=req.is_international,
-            weak_signals=fast.weak,
+            weak_signals=fast.weak
+            + (["글자 사이에 기호를 넣어 키워드를 숨긴 흔적"] if rules.obfuscated else []),
             final_urls=[u.final for u in fast.urls],
             user_type=req.user_type,
             language=req.language,
