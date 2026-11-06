@@ -49,7 +49,7 @@ object LockScreenSettings {
             }.getOrDefault(false)
         }
         if (!opened) {
-            Toast.makeText(context, "휴대폰 설정 → 앱 → 안심문자 → 알림에서 허용해 주세요.", Toast.LENGTH_LONG).show()
+            Toast.makeText(context, "휴대폰 설정 → 앱 → 모두안심 → 알림에서 허용해 주세요.", Toast.LENGTH_LONG).show()
         }
     }
 }

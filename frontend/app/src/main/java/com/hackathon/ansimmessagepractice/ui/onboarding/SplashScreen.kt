@@ -21,7 +21,7 @@ fun SplashScreen(onFinished: () -> Unit) {
         Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
             AnsimBrandMark(size = 68.dp)
             Spacer(Modifier.height(18.dp))
-            Text("안심 문자", color = AnsimInk, fontSize = 33.sp, fontWeight = FontWeight.ExtraBold)
+            Text("모두안심", color = AnsimInk, fontSize = 33.sp, fontWeight = FontWeight.ExtraBold)
             Text("모두를 위한 문자피싱 예방 서비스", color = AnsimMuted, fontSize = 14.sp)
         }
         Text("설정을 확인하고 있습니다", Modifier.align(Alignment.BottomCenter).padding(bottom = 30.dp),

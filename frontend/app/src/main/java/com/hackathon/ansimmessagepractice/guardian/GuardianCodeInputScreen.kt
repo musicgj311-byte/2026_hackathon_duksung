@@ -19,10 +19,6 @@ import com.hackathon.ansimmessagepractice.ui.onboarding.OnboardingPage
 import com.hackathon.ansimmessagepractice.ui.theme.*
 import kotlinx.coroutines.launch
 
-/**
- * 6자리 코드 입력. 시연일 때만 서버 요청 대신 로컬 시뮬레이션을 합니다.
- * showLater=false(홈에서 '가족 추가하기'로 들어온 경우)면 시안처럼 '연결 요청' 버튼만 표시합니다.
- */
 @Composable
 fun GuardianCodeInputScreen(onBack: () -> Unit, onConnected: () -> Unit, onLater: () -> Unit,
                             onDemoRequest: () -> Unit = {}, showLater: Boolean = true) {
@@ -77,7 +73,7 @@ fun GuardianCodeInputScreen(onBack: () -> Unit, onConnected: () -> Unit, onLater
     }) {
         OnboardingEyebrow("보호자 · 가족 연결")
         Spacer(Modifier.height(21.dp))
-        AnsimHeading("가족 휴대폰에 보이는\n코드를 입력해 주세요", "가족의 안심문자 앱에 나온 6자리 숫자예요.")
+        AnsimHeading("가족 휴대폰에 보이는\n코드를 입력해 주세요", "가족의 모두안심 앱에 나온 6자리 숫자예요.")
         Spacer(Modifier.height(25.dp))
         Text("연결 코드", style = ansimStyle(15, 22, FontWeight.SemiBold), color = AnsimMuted)
         Spacer(Modifier.height(7.dp))

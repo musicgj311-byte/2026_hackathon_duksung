@@ -30,6 +30,10 @@ import com.hackathon.ansimmessagepractice.detection.AlertRecord
 import java.util.concurrent.TimeUnit
 import com.hackathon.ansimmessagepractice.ui.theme.*
 
+/**
+ * guardianConnected=null은 백엔드 조회 전이며, 로컬 전화번호로 서버 연결을 추측하지 않습니다.
+ * 상단 '모두안심' 로고를 5번 누르면 프론트엔드 확인용 시연 메뉴가 열립니다(평상시 숨김).
+ */
 @Composable
 fun HomeScreen(
     selectedType: String, selectedLanguage: String,
@@ -94,7 +98,6 @@ fun HomeScreen(
     val guardianPhone = if (demoLinked && !hasPhone) DemoPairing.GUARDIAN_PHONE else formatPhone(savedPhone)
 
     Column(Modifier.fillMaxSize().background(AnsimCream).statusBarsPadding().navigationBarsPadding()) {
-        // 상단: 흰 바탕 56dp + 구분선, 방패 아이콘 + '안심문자', 오른쪽 설정 아이콘
         Column(Modifier.fillMaxWidth().background(Color.White)) {
             Row(Modifier.fillMaxWidth().height(56.dp), verticalAlignment = Alignment.CenterVertically) {
                 Row(
@@ -108,7 +111,7 @@ fun HomeScreen(
                 ) {
                     AnsimIcon(AnsimIcons.ShieldCheck, AnsimBlue, 24.dp)
                     Spacer(Modifier.width(8.dp))
-                    Text("안심문자", style = ansimStyle(18, 26, FontWeight.ExtraBold), color = AnsimInk)
+                    Text("모두안심", style = ansimStyle(18, 26, FontWeight.ExtraBold), color = AnsimInk)
                 }
                 Spacer(Modifier.weight(1f))
                 Box(Modifier.size(48.dp).clickable(role = Role.Button, onClick = onSettingsClick),
@@ -214,7 +217,7 @@ fun HomeScreen(
                 }
             }
             if (showDemo) {
-                Text("시연 전용 · 안심문자 로고를 5번 누르면 닫혀요", style = ansimStyle(13, 18), color = AnsimSubtle)
+                Text("시연 전용 · 모두안심 로고를 5번 누르면 닫혀요", style = ansimStyle(13, 18), color = AnsimSubtle)
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     DemoChip("위험", Modifier.weight(1f)) { onTestWarningClick("danger") }
                     DemoChip("주의", Modifier.weight(1f)) { onTestWarningClick("caution") }

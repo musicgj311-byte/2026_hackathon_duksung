@@ -95,7 +95,6 @@ fun GuardianHomeScreen(onInputCode: () -> Unit, onManualCall: () -> Unit,
     )
 
     Column(Modifier.fillMaxSize().background(AnsimCream).statusBarsPadding().navigationBarsPadding()) {
-        // 최종 시안 34p 상단: 흰 바탕 56dp + 구분선, 앱 아이콘 + '안심문자', 오른쪽 '보호자' 꼬리표(메뉴)
         Column(Modifier.fillMaxWidth().background(Color.White)) {
             Row(Modifier.fillMaxWidth().height(56.dp).padding(start = 20.dp, end = 20.dp),
                 verticalAlignment = Alignment.CenterVertically) {
@@ -105,7 +104,7 @@ fun GuardianHomeScreen(onInputCode: () -> Unit, onManualCall: () -> Unit,
                 }, verticalAlignment = Alignment.CenterVertically) {
                     AnsimAppIcon(size = 24.dp)
                     Spacer(Modifier.width(8.dp))
-                    Text("안심문자", style = ansimStyle(18, 26, FontWeight.ExtraBold), color = AnsimInk)
+                    Text("모두안심", style = ansimStyle(18, 26, FontWeight.ExtraBold), color = AnsimInk)
                 }
                 Spacer(Modifier.weight(1f))
                 Box {

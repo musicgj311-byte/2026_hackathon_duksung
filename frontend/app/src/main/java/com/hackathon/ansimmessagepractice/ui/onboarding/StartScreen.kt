@@ -32,7 +32,7 @@ fun StartScreen(name: String, modifier: Modifier = Modifier, onStartClick: () ->
             Text("의심하지\n않아도\n괜찮아요.", color = Color.White,
                 style = ansimStyle(52, 58.2, FontWeight.ExtraBold).copy(letterSpacing = (-0.02).em))
             Spacer(Modifier.height(20.dp))
-            Text("사기 문자는 안심문자가 먼저 보고,\n위험하면 가족에게도 알려요.",
+            Text("사기 문자는 모두안심이 먼저 보고,\n위험하면 가족에게도 알려요.",
                 color = Color.White.copy(alpha = .92f), style = ansimStyle(19, 29.5))
             Spacer(Modifier.height(30.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

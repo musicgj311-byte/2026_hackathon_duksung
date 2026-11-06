@@ -94,7 +94,7 @@ fun ProtectedPairingScreen(onBack: () -> Unit, onLater: () -> Unit,
         Spacer(Modifier.height(22.dp))
         if (expired) AnsimHeading("코드 시간이\n지났어요",
             "10분이 지나 이 코드는 쓸 수 없어요. 새 코드를 받아 보호자에게 다시 알려 주세요.", AnsimType.LeadLong)
-        else AnsimHeading("보호자에게\n이 코드를 알려 주세요", "보호자 휴대폰의 안심문자에서 입력하면 연결돼요.")
+        else AnsimHeading("보호자에게\n이 코드를 알려 주세요", "보호자 휴대폰의 모두안심 앱에서 입력하면 연결돼요.")
         Spacer(Modifier.height(if (expired) 25.dp else 27.dp))
         PairingCodeCard(ticket, expired, remaining, busy)
         if (ticket != null && !expired) {
@@ -179,7 +179,6 @@ private fun DemoApprovalRow(label: String, value: String) {
     HorizontalDivider(color = AnsimDivider, thickness = 1.dp)
 }
 
-/** 연결 완료: 체크 아이콘 · 제목 · 아이콘 3줄 · 홈으로 */
 @Composable
 fun GuardianConnectedScreen(onHome: () -> Unit, demo: Boolean = false) {
     val guardianName = DemoPairing.GUARDIAN_NAME.substringBefore(" (")

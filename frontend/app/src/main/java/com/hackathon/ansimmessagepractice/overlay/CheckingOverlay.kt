@@ -17,9 +17,6 @@ import android.widget.TextView
 import com.hackathon.ansimmessagepractice.ui.onboarding.largeTextScale
 import com.hackathon.ansimmessagepractice.ui.theme.DESIGN_FONT_SCALE
 
-/**
- * 의심 메시지를 분석하는 동안 화면 위쪽에 잠깐 보여주는 카드.
- */
 internal class CheckingOverlay(private val context: Context) {
     private val windowManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
     private val density = context.resources.displayMetrics.density
@@ -71,7 +68,7 @@ internal class CheckingOverlay(private val context: Context) {
             indeterminateTintList = ColorStateList.valueOf(blue)
         }, LinearLayout.LayoutParams(dp(17), dp(17)).apply { rightMargin = dp(10) })
         brandRow.addView(TextView(context).apply {
-            text = "안심문자"
+            text = "모두안심"
             textSize = size(15f)
             setTextColor(muted)
             setTypeface(null, Typeface.BOLD)
@@ -89,7 +86,7 @@ internal class CheckingOverlay(private val context: Context) {
             setTextColor(muted)
         }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(9) })
 
-        // 그림자가 잘리지 않도록 바깥 여백을 둔 투명 틀 안에 카드를 둡니다.
+        // 그림자가 잘리지 않도록 바깥 여백을 둔 투명 틀 안에 카드.
         val root = FrameLayout(context).apply { setPadding(dp(13), dp(17), dp(13), dp(16)) }
         root.addView(card, FrameLayout.LayoutParams(-1, -2))
 

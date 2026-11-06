@@ -68,7 +68,6 @@ fun GuardianAlertScreen(
     Column(Modifier.fillMaxSize().background(AnsimCream).statusBarsPadding().navigationBarsPadding()) {
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState())
             .padding(start = 13.dp, end = 13.dp, top = 15.dp, bottom = 16.dp)) {
-            // 최종 시안 33p 상단: 푸시 알림 모양 카드
             Surface(shape = RoundedCornerShape(16.dp), color = Color.White, shadowElevation = 6.dp,
                 modifier = Modifier.fillMaxWidth()) {
                 Row(Modifier.fillMaxWidth().padding(start = 17.dp, end = 16.dp, top = 15.dp, bottom = 15.dp)) {
@@ -76,7 +75,7 @@ fun GuardianAlertScreen(
                     Spacer(Modifier.width(9.dp))
                     Column(Modifier.weight(1f)) {
                         Row(Modifier.fillMaxWidth()) {
-                            Text("안심문자", Modifier.weight(1f), style = AnsimType.Body, color = AnsimSubtle)
+                            Text("모두안심", Modifier.weight(1f), style = AnsimType.Body, color = AnsimSubtle)
                             Text(if (isPreview) "방금" else formatGuardianEventTime(record?.sentAt),
                                 style = AnsimType.Body, color = AnsimSubtle)
                         }

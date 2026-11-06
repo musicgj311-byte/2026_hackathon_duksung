@@ -33,14 +33,14 @@ object WarningNotification {
         if (Build.VERSION.SDK_INT >= 26) {
             val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             manager.createNotificationChannel(NotificationChannel(
-                CHANNEL, "안심문자 위험 경고", NotificationManager.IMPORTANCE_HIGH
+                CHANNEL, "모두안심 위험 경고", NotificationManager.IMPORTANCE_HIGH
             ).apply {
                 description = "잠금 화면에 개인 정보 없이 위험을 알립니다"
                 lockscreenVisibility = android.app.Notification.VISIBILITY_PUBLIC
                 enableVibration(true)
             })
             manager.createNotificationChannel(NotificationChannel(
-                CAUTION_CHANNEL, "안심문자 주의 안내", NotificationManager.IMPORTANCE_DEFAULT
+                CAUTION_CHANNEL, "모두안심 주의 안내", NotificationManager.IMPORTANCE_DEFAULT
             ).apply {
                 description = "주의 단계 메시지를 개인 정보 없이 알려드립니다"
                 lockscreenVisibility = android.app.Notification.VISIBILITY_PUBLIC
@@ -73,7 +73,6 @@ object WarningNotification {
             details, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         val danger = level == "danger"
         val kakao = source == "kakao"
-        // 시스템 알림은 짧은 경고만 표시. 상세 시안(p.16~18)은 앱 화면/오버레이에서 구현.
         val link = com.hackathon.ansimmessagepractice.ui.warning.isLinkScam(scamType, danger)
         val koreanTitle = when {
             level == "timeout" -> "문자 확인을 완료하지 못했어요"
