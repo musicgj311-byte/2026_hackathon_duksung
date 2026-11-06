@@ -91,3 +91,15 @@ class IncidentInfo(BaseModel):
 class IncidentListResponse(BaseModel):
     guardian_device_id: str
     incidents: list[IncidentInfo]
+
+
+# 14. 보호 대상자에게 연결된 보호자 정보
+class GuardianInfo(BaseModel):
+    guardian_device_id: str
+    connected_at: datetime
+
+
+# 15. 보호 대상자의 보호자 목록 조회 결과 (피보호자 앱이 연결 완료를 확인할 때 사용)
+class GuardianListResponse(BaseModel):
+    protected_device_id: str
+    guardians: list[GuardianInfo]

@@ -13,6 +13,8 @@ from app.guardian.schemas import (
     GuardianConnectResponse,
     GuardianDisconnectRequest,
     GuardianDisconnectResponse,
+    GuardianInfo,
+    GuardianListResponse,
     IncidentEventInfo,
     IncidentInfo,
     IncidentListResponse,
@@ -440,6 +442,48 @@ def get_protected_users(
                 language=user.language,
             )
             for user in protected_users
+        ],
+    )
+
+
+# 보호 대상자와 연결된 보호자 목록 조회
+# 피보호자 앱이 연결 코드 화면에서 주기적으로 호출해, 보호자가 코드를 입력했는지 확인합니다.
+@router.get(
+    "/protected/{protected_device_id}/guardians",
+    response_model=GuardianListResponse,
+)
+def get_guardians(
+    protected_device_id: str,
+    session: Session = Depends(get_session),
+):
+    # 1. 요청한 기기가 실제 보호 대상자인지 확인
+    protected_user = session.get(Device, protected_device_id)
+
+    if not protected_user or protected_user.role != "protected":
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="보호 대상자를 찾을 수 없습니다.",
+        )
+
+    # 2. 현재 연결된 보호자 조회 (최근 연결 순)
+    links = session.exec(
+        select(GuardianLink)
+        .where(
+            GuardianLink.protected_device_id == protected_device_id,
+            GuardianLink.is_active == True,
+        )
+        .order_by(GuardianLink.created_at.desc())
+    ).all()
+
+    # 3. 응답 형식에 맞게 데이터 구성
+    return GuardianListResponse(
+        protected_device_id=protected_device_id,
+        guardians=[
+            GuardianInfo(
+                guardian_device_id=link.guardian_device_id,
+                connected_at=link.created_at,
+            )
+            for link in links
         ],
     )
 
