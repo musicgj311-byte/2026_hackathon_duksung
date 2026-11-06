@@ -110,7 +110,6 @@
 
 ## 4. 실행 방법
 
-> `<...>`로 표시한 부분은 레포 구조에 맞게 바꿔 주세요.
 
 ### 서버 (FastAPI)
 
@@ -138,7 +137,7 @@ VIRUSTOTAL_API_KEY=<VirusTotal API 키>
 FIREBASE_CREDENTIALS=<Firebase 서비스 계정 JSON 경로>
 DATABASE_URL=sqlite:///./data/app.db
 ```
-> 실제 변수 이름은 `.env.example`을 기준으로 합니다. API 키는 레포에 올리지 마세요.
+
 
 **4) 서버 실행**
 ```bash
